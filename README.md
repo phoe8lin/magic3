@@ -1,2 +1,4 @@
-# magic3
-A tool set for python3
+#magic3
+=
+Magic Python3 Library 
+-
