@@ -116,7 +116,7 @@ class OpMongo(object):
         """ explain """
         return str(cursor.explain())
     
-    def find(self, query = {}, sortkey = None, reverse = True, explain = False)->'cursor':
+    def find(self, query = {}, sortkey = None, reverse = True, explain = False):
         """ find doc specified by `query`, if `sortkey`, sort result """
         cursor = self._collection.find(query)
         if explain:
@@ -124,6 +124,15 @@ class OpMongo(object):
         if sortkey:
             cursor.sort(sortkey, pymongo.DESCENDING if reverse else pymongo.ASCENDING)
         return cursor
+    
+    def find_fields(self, query, fields:list):
+        """ find doc specified by `query`, if `sortkey`, sort result """
+        cursor = self._collection.find(query, fields)
+        return cursor
+
+    def distinct(self, key):
+        return self._collection.distinct(key)
+
 
 
 @time_meter(__name__)
@@ -136,6 +145,5 @@ def test(jsonfile):
     db.choose(colls[0])
     print(list(db.find({}, explain=True)))
 
-    
 
 
