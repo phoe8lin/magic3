@@ -4,6 +4,7 @@
 """ this module only works on unix/linux systems!!! """
 from subprocess import Popen, PIPE, getstatusoutput
 
+
 class OSCommand(object):
     """ call system command, all methods are staticmethod """
     @staticmethod
@@ -62,7 +63,6 @@ def test():
         print(OSCommand.execute('uptime', True).decode('utf-8'))
         print(OSCommand.execute('free -mo', True).decode('utf-8'))
         time.sleep(1.0)
-
 
 if __name__ == '__main__':
     test() 

@@ -97,6 +97,10 @@ def dumpjson(objs:dict, objhook=None, filename=None)->str:
             f.write(s)
     return s
 
+def debug(*args, **kwargs):
+    """ print to stderr not stdout """
+    print(time.strftime('%Y-%m-%d %H:%M:%S'), *args, file=sys.stderr, flush=True, **kwargs)
+
 class IncreamentID(int):
     """ auto increament id """
     @staticmethod
@@ -118,12 +122,19 @@ class DummyLock(object):
     def release(self, *args, **kwargs): pass
 
 def stdtime():
-    """ return iso datetime, like 14-03-28 19:45:59 """ 
-    return time.strftime('%y-%m-%d %H:%M:%S')
+    """ return iso datetime, like 2014-03-28 19:45:59 """ 
+    return time.strftime('%Y-%m-%d %H:%M:%S')
 
-def debug(*args, **kwargs):
-    """ print to stderr not stdout """
-    print(time.strftime('%Y-%m-%d %H:%M:%S'), *args, file=sys.stderr, flush=True, **kwargs)
+def is_time_point(time_in_24h_format):
+    """ check now is specify time """
+    return time.strftime('%H:%M:%S') == time_in_24h_format
+
+def wait_until(time_in_24h_format):
+    """ return until now is hour:minute:second """
+    while True:
+        if is_time_point(time_in_24h_format):
+            break
+        time.sleep(0.5)
 
 def time_meter(src=os.path.basename(__file__)):
     """ print time when enter wrapped function and leave wrapped function """
@@ -149,7 +160,6 @@ def print_exception(name, output=sys.stderr):
     exc_type = str(exc_type).lstrip('class <').rstrip('>')
     sys.stderr.write('%s : %s from :%s\n' % (exc_type, exc_val, name))
     traceback.print_tb(exc_tb, limit=2, file=output)
-
 
 class IOFlusher(Thread):
     """ used for global io flusher """
@@ -211,9 +221,4 @@ def singleton(cls, *args, **kw):
             instances[cls] = cls(*args, **kw)
         return instances[cls]
     return _object
-
-
-
-
-
 
