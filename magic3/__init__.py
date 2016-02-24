@@ -6,9 +6,7 @@ magic3 library based on python3.4+, it's simple, compositive and wraps many usef
 """
 
 __author__  = 'cypro666'
-__version__ = '1.3'
-__git__     = 'http://git.oschina.net/cypro/magic3'
-__all__     = ['adt', 'common', 'database', 'http']
+__version__ = '1.4'
+__git__     = 'https://github/cypro666/magic3'
 __need__    = ('pymysql', 'pymongo', 'redis', 'tornado')
 __optional__= ('pycurl', 'requests', 'sqlalchemy', 'numpy', 'mako')
-

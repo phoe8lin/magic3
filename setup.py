@@ -16,9 +16,9 @@ setup(name = "magic3",
       author = __author__,
       author_email = 'cypro666@gmail.com',
       license = 'MIT License',
-      keywords = ['web', 'common', 'database', 'utils'],
+      keywords = ['web', 'http', 'database', 'utils'],
       platforms = 'Linux',
-      packages = ['magic3', 'magic3.adt', 'magic3.common', 'magic3.database', 'magic3.http'],
-      download_url = 'https://github.com/cypro666/',
+      packages = ['magic3'],
+      download_url = 'https://github.com/cypro666/magic3',
       url='https://github.com/cypro666')
 
