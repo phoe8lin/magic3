@@ -1,14 +1,12 @@
 # -*- coding:utf-8 -*-
 ## author : cypro666
 ## note   : python3.4+
-import os, sys, traceback
-import json, re, time
-import functools
-import socket
+import os, sys, traceback, socket
+import json, re, functools
 from threading import Thread 
 from base64 import b64encode, b64decode
 from ipaddress import ip_address
-from sys import version_info
+from time import time, strftime, sleep
 
 def is_valid_ip(ip)->bool:
     """ Returns true if the given string is a well-formed IP address(v4/v6) """
@@ -99,7 +97,7 @@ def dumpjson(objs:dict, objhook=None, filename=None)->str:
 
 def debug(*args, **kwargs):
     """ print to stderr not stdout """
-    print(time.strftime('%Y-%m-%d %H:%M:%S'), *args, file=sys.stderr, flush=True, **kwargs)
+    print(strftime('%Y-%m-%d %H:%M:%S'), *args, file=sys.stderr, flush=True, **kwargs)
 
 class IncreamentID(int):
     """ auto increament id """
@@ -123,18 +121,18 @@ class DummyLock(object):
 
 def stdtime():
     """ return iso datetime, like 2014-03-28 19:45:59 """ 
-    return time.strftime('%Y-%m-%d %H:%M:%S')
+    return strftime('%Y-%m-%d %H:%M:%S')
 
 def is_time_point(time_in_24h_format):
     """ check now is specify time """
-    return time.strftime('%H:%M:%S') == time_in_24h_format
+    return strftime('%H:%M:%S') == time_in_24h_format
 
 def wait_until(time_in_24h_format):
     """ return until now is hour:minute:second """
     while True:
-        if is_time_point(time_in_24h_format):
+        if strftime('%H:%M:%S') == time_in_24h_format:
             break
-        time.sleep(0.5)
+        sleep(0.5)
 
 def time_meter(src=os.path.basename(__file__)):
     """ print time when enter wrapped function and leave wrapped function """
@@ -175,7 +173,7 @@ class IOFlusher(Thread):
         while True:
             for each in self._ios:
                 each.flush()
-            time.sleep(self._delay)
+            sleep(self._delay)
 
 # the global io flusher
 __flusher = IOFlusher()
@@ -191,23 +189,23 @@ def run_stdio_flusher()->bool:
 class Timer(object):
     """ a simple timer for debug using """
     def __init__(self):
-        self.t = time.time()
+        self.t = time()
     def reset(self):
-        self.t = time.time()
+        self.t = time()
     def __str__(self):
-        return str(round((time.time() - self.t), 4))
+        return str(round((time() - self.t), 4))
     def __repr__(self):
         return self.__str__()
     def __float__(self):
-        return time.time() - self.t
+        return time() - self.t
     def __int__(self):
-        return int(time.time() - self.t)
+        return int(time() - self.t)
     def show(self):
         print(str(self))
 
 def python_version()->tuple:
     ''' get python version tuple like (3, 4) '''
-    return version_info.major, version_info.minor
+    return sys.version_info.major, sys.version_info.minor
 
 def singleton(cls, *args, **kw):
     """ singleton object wrapper, usage:
