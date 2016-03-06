@@ -20,17 +20,17 @@ class FillerBase(object):
         pass
 
 class ETA(BarBase):
-    def format_time(self, seconds):
+    def formatTime(self, seconds):
         return time.strftime('%H:%M:%S', time.gmtime(seconds))
     def update(self, pbar):
-        if pbar.currval == 0:
+        if pbar.curValue == 0:
             return 'Time:  --:--:--'
         elif pbar.finished:
-            return 'Time: %s' % self.format_time(pbar.seconds_elapsed)
+            return 'Time: %s' % self.formatTime(pbar.secondsElapsed)
         else:
-            elapsed = pbar.seconds_elapsed
-            eta = elapsed * pbar.maxval / pbar.currval - elapsed
-            return 'Time: %s' % self.format_time(eta)
+            elapsed = pbar.secondsElapsed
+            eta = elapsed * pbar.maxValue / pbar.curValue - elapsed
+            return 'Time: %s' % self.formatTime(eta)
 
 class Percentage(BarBase):
     def update(self, pbar):
@@ -42,7 +42,7 @@ class BarFiller(FillerBase):
         self.marker = marker
         self.left = left
         self.right = right
-    def _format_marker(self, pbar):
+    def _formatMarker(self, pbar):
         if isinstance(self.marker, str):
             return self.marker
         else:
@@ -50,44 +50,44 @@ class BarFiller(FillerBase):
     def update(self, pbar, width):
         percent = pbar.percentage()
         cwidth = (width - len(self.left) - len(self.right))*2
-        marked_width = int(percent * cwidth / 100)
-        m = self._format_marker(pbar)
-        bar = (self.left + (m*marked_width).ljust(int(cwidth)) + self.right)
+        markedWidth = int(percent * cwidth / 100)
+        m = self._formatMarker(pbar)
+        bar = (self.left + (m*markedWidth).ljust(int(cwidth)) + self.right)
         return bar
 
-default_widgets = [Percentage(), ' ', BarFiller()]
+gDefaultWidgets = [Percentage(), ' ', BarFiller()]
 
 class ProgressBar(object):
     """ see test """
-    def __init__(self, maxval=100, widgets=default_widgets, term_width=None, fd=sys.stderr):
-        assert maxval > 0
-        self.maxval = maxval
+    def __init__(self, maxValue=100, widgets=gDefaultWidgets, termWidth=None, fd=sys.stderr):
+        assert maxValue > 0
+        self.maxValue = maxValue
         self.widgets = widgets
         self.fd = fd
-        self.signal_set = False
-        if term_width is None:
+        self.signalSet = False
+        if termWidth is None:
             try:
-                self.handle_resize(None,None)
-                signal.signal(signal.SIGWINCH, self.handle_resize)
-                self.signal_set = True
+                self.handleResize(None,None)
+                signal.signal(signal.SIGWINCH, self.handleResize)
+                self.signalSet = True
             except:
-                self.term_width = 80
+                self.termWidth = 80
         else:
-            self.term_width = term_width
-        self.currval = 0
+            self.termWidth = termWidth
+        self.curValue = 0
         self.finished = False
-        self.prev_percentage = -1
-        self.start_time = None
-        self.seconds_elapsed = 0
+        self.prevPercentage = -1
+        self.startTime = None
+        self.secondsElapsed = 0
 
-    def handle_resize(self, signum, frame):
+    def handleResize(self, signum, frame):
         h,w=array('h', ioctl(self.fd,termios.TIOCGWINSZ,'\0'*8))[:2]
-        self.term_width = w
+        self.termWidth = w
 
     def percentage(self):
-        return self.currval*100.0 / self.maxval
+        return self.curValue*100.0 / self.maxValue
 
-    def _format_widgets(self):
+    def _formatWidgets(self):
         r = []
         hfill_inds = []
         num_hfill = 0
@@ -105,37 +105,37 @@ class ProgressBar(object):
                 currwidth += len(weval)
                 r.append(weval)
         for iw in hfill_inds:
-            r[iw] = r[iw].update(self, (self.term_width-currwidth)/num_hfill)
+            r[iw] = r[iw].update(self, (self.termWidth-currwidth)/num_hfill)
         return r
 
-    def _format_line(self):
-        return ''.join(self._format_widgets()).ljust(self.term_width)
+    def _formatLine(self):
+        return ''.join(self._formatWidgets()).ljust(self.termWidth)
 
-    def _need_update(self):
-        return int(self.percentage()) != int(self.prev_percentage)
+    def _needUpdate(self):
+        return int(self.percentage()) != int(self.prevPercentage)
 
     def update(self, value):
-        assert 0 <= value <= self.maxval
-        self.currval = value
-        if not self._need_update() or self.finished:
+        assert 0 <= value <= self.maxValue
+        self.curValue = value
+        if not self._needUpdate() or self.finished:
             return
-        if not self.start_time:
-            self.start_time = time.time()
-        self.seconds_elapsed = time.time() - self.start_time
-        self.prev_percentage = self.percentage()
-        if value != self.maxval:
-            self.fd.write(self._format_line() + '\r')
+        if not self.startTime:
+            self.startTime = time.time()
+        self.secondsElapsed = time.time() - self.startTime
+        self.prevPercentage = self.percentage()
+        if value != self.maxValue:
+            self.fd.write(self._formatLine() + '\r')
         else:
             self.finished = True
-            self.fd.write(self._format_line() + '\n')
+            self.fd.write(self._formatLine() + '\n')
 
     def start(self):
         self.update(0)
         return self
 
     def finish(self):
-        self.update(self.maxval)
-        if self.signal_set:
+        self.update(self.maxValue)
+        if self.signalSet:
             signal.signal(signal.SIGWINCH, signal.SIG_DFL)
         
 class CustomerHead(FillerBase):
@@ -153,18 +153,18 @@ class CustomerHead(FillerBase):
         return self.head
 
 
-def test(maxval, septime):
+def test(maxValue, septime):
     head = CustomerHead()
     widgets = [head, '|', BarFiller(marker='='), '| ', Percentage(), ' ', ETA()]
-    pbar = ProgressBar(widgets=widgets, maxval=maxval)
+    pbar = ProgressBar(widgets=widgets, maxValue=maxValue)
     pbar.start()
-    for i in range(maxval):
+    for i in range(maxValue):
         time.sleep(septime)
         if not (i % 10):
             head.set(str(i)+' ')
         pbar.update(i)
-    head.set(str(maxval)+' ')
-    pbar.update(maxval)
+    head.set(str(maxValue)+' ')
+    pbar.update(maxValue)
     pbar.finish()
 
 

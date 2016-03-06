@@ -4,13 +4,15 @@
 ## date   : 2015.06.06
 import re, time
 import threading
-try:    import select
-except: pass
-try:    from tornado import gen, queues, ioloop
-except: raise ImportError('magic3.async.httpclinet needs tornado library!')
-try:    from tornado import curl_httpclient
-except: from tornado import httpclient
-from magic3.utils import time_meter
+try:    
+    from tornado import gen, queues, ioloop
+except: 
+    raise ImportError('magic3.async.httpclinet needs tornado library!')
+try:    
+    from tornado.curl_httpclient import CurlAsyncHTTPClient as AsyncHTTPClient
+except: 
+    from tornado.httpclient import AsyncHTTPClient as AsyncHTTPClient
+from magic3.utils import timeMeter
 
 
 class Delay(object):
@@ -58,7 +60,7 @@ class AsyncHttpClient(object):
     """ used for `AsyncClientPool` """
     __slots__ = ('_response', '_etime', '_client', '_url', '_options')
     
-    def __init__(self, url, method='GET', timeout=30, follow_redirects=True, max_redirects=5):
+    def __init__(self, url, method='GET', timeout=30, follow_Redirects=True, max_Redirects=5):
         """ `method` only supports 'GET' and 'HEAD' now... """
         super().__init__()
         if method not in ('GET', 'HEAD'):
@@ -68,15 +70,12 @@ class AsyncHttpClient(object):
         self._etime = time.time()
         self._options = { 'method'            : method,
                           'connect_timeout'   : timeout,
-                          'follow_redirects'  : follow_redirects,
-                          'max_redirects'     : max_redirects,
+                          'follow_redirects'  : follow_Redirects,
+                          'max_redirects'     : max_Redirects,
                           'user_agent'        : 'Mozilla/5.0 Gecko Firefox/29.0',
                           'use_gzip'          : True,
                           'allow_nonstandard_methods' : False }
-        try:
-            self._client = curl_httpclient.CurlAsyncHTTPClient()
-        except:
-            self._client = httpclient.AsyncHTTPClient()
+        self._client = AsyncHTTPClient()
             
     @property
     def html(self):
@@ -114,15 +113,15 @@ class AsyncHttpClient(object):
 
 class AsyncHttpClientPool(threading.Thread):
     """ pool of clients  """
-    def __init__(self, num_concurrency, callback):
+    def __init__(self, numConcurrency, callback):
         """ num_concurrency should Not be too large, 4~8 are suitable values """
         threading.Thread.__init__(self)
-        self._numco = num_concurrency
+        self._nworker = numConcurrency
         self._callback = callback
         self._queue = queues.Queue()
         self._fetched = 0
-        self._tostop = threading.Event()
-        self._tostop.clear()
+        self._stopEvent = threading.Event()
+        self._stopEvent.clear()
 
     @property
     def fetched(self):
@@ -134,11 +133,11 @@ class AsyncHttpClientPool(threading.Thread):
     
     @gen.coroutine
     def stop(self):
-        self._tostop.set()
+        self._stopEvent.set()
         self._etime = time.time() - self._etime
 
     @gen.coroutine
-    def _callback_wrapper(self, client):
+    def _callbackWrapper(self, client):
         return self._callback(client)
 
     @gen.coroutine
@@ -146,24 +145,20 @@ class AsyncHttpClientPool(threading.Thread):
         yield self._queue.put(AsyncHttpClient(url))
     
     @gen.coroutine
-    def _fetch_url(self):
-        current = yield self._queue.get()
-        try:
-            yield current.fetch()
-            yield self._callback_wrapper(current)
-        finally:
-            self._fetched += 1
-            self._queue.task_done()
-
-    @gen.coroutine
     def _work(self):
         while True:
-            yield self._fetch_url()
+            current = yield self._queue.get()
+            try:
+                yield current.fetch()
+                yield self._callbackWrapper(current)
+            finally:
+                self._fetched += 1
+                self._queue.task_done()
 
     @gen.coroutine
     def __call__(self):
         """ Start workers, then wait for the work queue to be empty """
-        for i in range(self._numco):
+        for i in range(self._nworker):
             self._work()
         yield self._queue.join()
 
@@ -171,14 +166,14 @@ class AsyncHttpClientPool(threading.Thread):
         """ call start method to run this thread """
         self._etime = time.time()
         while True:
-            if self._tostop.is_set():
+            if self._stopEvent.is_set():
                 return
             io_loop = ioloop.IOLoop.current()
             io_loop.run_sync(self)
             Delay.wait(0.1)
 
 
-@time_meter(__file__)
+@timeMeter(__file__)
 def test():
     d = DecodeCache()
     c = AsyncHttpClient("http://www.baidu.com/")
@@ -214,7 +209,7 @@ def test():
 
 if __name__ == '__main__':
     """ """
-    from magic3.utils import run_stdio_flusher
-    run_stdio_flusher()
+    from magic3.utils import runIoFlusher
+    runIoFlusher()
     test()
 

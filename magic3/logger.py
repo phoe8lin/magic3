@@ -26,12 +26,12 @@ class Logger(object):
         self.mode = 'a' if append else 'w'
         self.level = logging.NOTSET
         self.datefmt = '%Y-%m-%d %H:%M:%S'
-        self.msgformat = '%(asctime)s [%(levelname)s] %(message)s'
+        self.msgfmt = '%(asctime)s [%(levelname)s] %(message)s'
         logging.basicConfig(filename=logfile,
                             filemode=self.mode,
                             level=self.level,
                             datefmt=self.datefmt,
-                            format=self.msgformat)
+                            format=self.msgfmt)
         self.__log = { 'debug'    : logging.debug,
                        'info'     : logging.info,
                        'warn'     : logging.warn,
@@ -46,11 +46,11 @@ class Logger(object):
         """ check logfile exists or not """
         return os.path.exists(self.__logfile);
     
-    def filename(self)->str:
+    def fileName(self)->str:
         """ return real path of logfile """
         return os.path.realpath(self.__logfile)
     
-    def filesize(self)->int:
+    def fileSize(self)->int:
         """ return size in byte of logfile """
         return os.path.getsize(self.__logfile)
 
@@ -104,11 +104,11 @@ class Logger(object):
     def critical(self, *messages):
         self.__call__(*messages, level='critical', tb=self.__caller(1))
     
-    def current_lines(self)->int:
+    def currentLines(self)->int:
         """ get number lines in current log file """ 
         return self.__nlines
     
-    def current_levels(self)->dict:
+    def currentLevels(self)->dict:
         """ get number levels in current log file """ 
         return self.__nlevel.copy()
 
@@ -123,7 +123,7 @@ def test():
     id2 = id(log)
     assert id1 == id2
     log.check()
-    print('log file : %s' % log.filename())
+    print('log file : %s' % log.fileName())
     log('log test start...')
     log.debug('this is debug: %s' % __name__)
     log('this is info', level='info')
@@ -137,9 +137,9 @@ def test():
     test_inner(log, 'more lines:\nsome line1\nsome line2\nsome line3')
     log.record({'the first':'info', 'the second':'info'})
     log('log test finish...')
-    print('lines:', log.current_lines())
-    print('levels:', log.current_levels())
-    print('log file size : %d' % log.filesize())
+    print('lines:', log.currentLines())
+    print('levels:', log.currentLevels())
+    print('log file size : %d' % log.fileSize())
 
 
 if __name__ == '__main__':

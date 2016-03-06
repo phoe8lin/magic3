@@ -6,7 +6,7 @@ import sys, gc
 BEST_RECURSION_LIMIT = 256
 BEST_CHECK_INTERVAL = 1024
 
-def _set_excepthook(excepthook):
+def _setExcepthook(excepthook):
     """ set exception hook
         excepthook looks like:
         def user_hook(exctype, value, traceback):
@@ -14,7 +14,7 @@ def _set_excepthook(excepthook):
     """
     sys.excepthook = excepthook
 
-def global_config():
+def globalConfig():
     """ set global best configs, eg: gc and recursion limit """
     sys.stderr.write('-' * 100 + '\n')
     sys.stderr.write('sys.platform : %s\n' % sys.platform)
@@ -36,9 +36,9 @@ def global_config():
 
 
 if __name__ == '__main__':
-    def user_hook(exctype, value, traceback):
+    def userHook(exctype, value, traceback):
         sys.stderr.write('Bingo! %s %s %s\n' % (exctype, value, traceback))
-    _set_excepthook(user_hook)
-    global_config()
+    _setExcepthook(userHook)
+    globalConfig()
     raise ValueError('Uncatched Error(for test)')
 

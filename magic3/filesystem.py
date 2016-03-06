@@ -6,19 +6,19 @@ from time import localtime
 from platform import platform
 from magic3.utils import debug
 
-def userdir():
+def userDir():
     ''' return current user's dir with os.sep '''
     return os.path.expanduser('~') + os.sep
 
-def curdir(fn):
+def curDir(fn):
     ''' return current dir of fn '''
     return os.path.dirname(os.path.realpath(fn))
 
-def parentdir(fn):
+def parentDir(fn):
     ''' return parent directory '''
     return os.path.dirname(os.path.dirname(os.path.realpath(fn)))
 
-def cma_file_time(fn):
+def cmaFileTime(fn):
     ''' get file time : ctime, mtime, atime '''
     assert os.path.exists(fn)
     fstat = os.lstat(fn)
@@ -99,7 +99,7 @@ class PathWalker(threading.Thread):
             sc.enter(self._delay * (i+1), 1, self.walk)
         sc.run()
 
-def is_valid_dir(*args) ->bool:
+def isValidDir(*args) ->bool:
     ''' check is valid dir '''
     for d in args:
         assert isinstance(d, str)
@@ -111,7 +111,7 @@ def is_valid_dir(*args) ->bool:
         return d.startswith('/')
     return True
 
-def list_dir(path, usercb=lambda x:True, timeout=10)->list:
+def listDir(path, usercb=lambda x:True, timeout=10)->list:
     ''' get all file names in `path` '''
     filenames = []
     def _callback(fn):
@@ -122,20 +122,20 @@ def list_dir(path, usercb=lambda x:True, timeout=10)->list:
     pw.join(timeout)
     return filenames
 
-def list_matched(path, sre):
+def listMatched(path, sre):
     ''' list all filenames in `path` which matched `sre` '''
     x = re.compile(sre)
-    return list(fn for fn in list_dir(path) if x.match(fn))
+    return list(fn for fn in listDir(path) if x.match(fn))
 
-def scan_dir(path):
-    ''' like list_dir, but without recursive!!! '''
+def scanDir(path):
+    ''' like listDir, but without recursive!!! '''
     if sys.version_info.minor >= 5:
         return tuple(os.scandir(path))
     else:
         return os.listdir(path)
 
 def test(path):
-    print('user dir:', userdir())
+    print('user dir:', userDir())
     print('test PathWalker:')
     ps = PathSpliter('/home/user/temp/domains.txt')
     print(str(ps))
@@ -149,19 +149,19 @@ def test(path):
     print(ps[2])
     print(ps[3])
     print('\ntest file time stat:')
-    c, m ,a = cma_file_time(path)
+    c, m ,a = cmaFileTime(path)
     print(c.tm_year, c.tm_mon, c.tm_mday)
     print(m.tm_year, m.tm_mon, m.tm_mday)
     print(a.tm_year, a.tm_mon, a.tm_mday)
-    print('\ntest list_dir with lambda:')
+    print('\ntest listDir with lambda:')
     cb = lambda fn : print(fn, time.ctime(os.path.getctime(fn)))
     pw = PathWalker(os.getcwd(), cb, 2.0, 1)
     pw.start()
     pw.join(3)
-    print('\ntest scan_dir:')
-    print(scan_dir(path))
+    print('\ntest scanDir:')
+    print(scanDir(path))
 
 
 if __name__ == '__main__':
-    test(userdir() + 'tmp')
+    test(userDir() + 'tmp')
 

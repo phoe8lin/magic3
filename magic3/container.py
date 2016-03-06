@@ -10,12 +10,11 @@ class BiMap(object):
     """ like bimap, can search v from k and search k from v,
         ensure k and v must be unique, using this as dict
     """
-    __slots__ = ('_kv', '_vk', '_hasher')
-    def __init__(self, keyhasher = None):
+    __slots__ = ('_kv', '_vk')
+    def __init__(self, hasher = None):
         super().__init__()
         self._kv = {}
         self._vk = {}
-        self._hasher = keyhasher
     
     def __str__(self):
         return '%s\n%s' % (self._kv, self._vk)
@@ -29,51 +28,40 @@ class BiMap(object):
     
     def clear(self):
         self._kv.clear()
-        del self._kv
         self._kv = {}
         self._vk.clear()
-        del self._vk
         self._vk = {}
     
-    def iterkv(self):
+    def iterKeyValue(self):
         return iter(self._kv.items())
     
-    def itervk(self):
+    def iterValueKey(self):
         return iter(self._vk.items())
     
     def zip(self):
         return zip(self._kv, self._vk)
-
-    def haskey(self, key):
-        if self._hasher:
-            return self._hasher(key) in self._kv
+    
+    def hasKey(self, key):
         return key in self._kv
     
-    def hasval(self, val):
+    def hasValue(self, val):
         return val in self._vk
     
     def __contains__(self, obj):
-        if self._hasher:
-            if self._hasher(obj) in self._kv:
-                return True
-        elif obj in self._kv:
+        if obj in self._kv:
             return True
         if obj in self._vk:
             return True
         return False
     
-    def getval(self, key):
-        if self._hasher:
-            return self._kv.get(self._hasher(key))
+    def getValue(self, key):
         return self._kv[key]
     
-    def getkey(self, val):
+    def getKey(self, val):
         return self._vk[val]
     
     def __getitem__(self, obj):
         try:
-            if self._hasher:
-                return self._kv[self._hasher(obj)]
             return self._kv[obj]
         except KeyError:
             try:
@@ -82,12 +70,6 @@ class BiMap(object):
                 raise ValueError(obj)
     
     def __setitem__(self, key, val):
-        if self._hasher:
-            key = self._hasher(key)
-        if (val in self._vk) and (key != self._vk[val]):
-            raise ValueError('BiMap : duplicate key or val {%s:%s}' % (key, val))
-        if key in self._kv:
-            self._vk.pop(self._kv[key])
         self._kv[key] = val
         self._vk[val] = key
         assert len(self._kv) == len(self._vk)
@@ -95,7 +77,7 @@ class BiMap(object):
     def update(self, key, val):
         self.__setitem__(key, val)
         
-    def from_iter(self, iterable, clear=True):
+    def fromIter(self, iterable, clear=True):
         if clear:
             self.clear()
         for k, v in iterable:
@@ -108,10 +90,10 @@ class BisectList(list):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     
-    def makeset(self)->set:
+    def makeSet(self)->set:
         return set(self)
     
-    def makedict(self, aggregate = False)->dict:
+    def makeDict(self, aggregate = False)->dict:
         if not aggregate:
             return dict(enumerate(self))
         grouper = {}
@@ -121,7 +103,7 @@ class BisectList(list):
             grouper[val].append(index)
         return grouper
     
-    def binary_search(self, x)->int:
+    def binarySearch(self, x)->int:
         lo = 0
         hi = self.__len__()
         while lo < hi:
@@ -170,12 +152,12 @@ class CounterType(defaultdict):
         for k in sorted(self, key=lambda x:self[x], reverse=reverse):
             yield (k, self[k])
     
-    def sorted_formated(self, formats='%d, %s', reverse=True)->str:
+    def sortedFormated(self, formats='%d, %s', reverse=True)->str:
         for k, v in self.sorted(reverse):
             yield formats % (v, k)
     
     def __str__(self, *args, **kwargs):
-        return str(dict(self))
+        return super().__str__()
 
 
 import unittest
@@ -191,30 +173,22 @@ class TestIteralgos(unittest.TestCase):
     
     def test_BiMap(self):
         d = [('name1', 'Mike'), ('name2', 'Jerry'), ('tag', 2.4), ('base', (1,2,3))]
-        bt = BiMap(keyhasher = None)
-        bt.from_iter(d)
-        self.assertEqual(bt.getval('name1'), 'Mike')
-        self.assertEqual(bt.getkey(2.4), 'tag')
-        bt['name2'] = 'Ops'
-        self.assertEqual(bt['name2'], 'Ops')
+        bt = BiMap()
+        bt.fromIter(d)
+        self.assertEqual(bt.getValue('name1'), 'Mike')
+        self.assertEqual(bt.getKey(2.4), 'tag')
+        bt['name3'] = 'Ops'
+        self.assertEqual(bt['name3'], 'Ops')
         bt.update('bingo', 'Cherry')
         bt.update('Cherry', 'bingo')
         try:
             bt.update('tag', 'bingo')
         except ValueError:
             pass
-        self.assertIsNotNone(bt.haskey('base'))
-        self.assertIsNotNone(bt.hasval((1,2,3)))
+        self.assertIsNotNone(bt.hasKey('base'))
+        self.assertIsNotNone(bt.hasValue((1,2,3)))
         self.assertTrue('name1' in bt)
-        self.assertTrue('name3' not in bt)
-        for i in range(1000000):
-            bt[i] = 1000000 + (i + 1)
-        dd = {}
-        for i in range(1000000):
-            dd[i] = 1000000 + (i + 1)
-        for i in range(1000000):
-            dd[i] = 1000000 + (i + 1)
-        self.assertEqual(bt.size(), (1000006, 64))
+        self.assertTrue('name4' not in bt)
     
     def test_BisectList(self):
         sl = BisectList()
@@ -222,7 +196,7 @@ class TestIteralgos(unittest.TestCase):
             sl.append(random.randint(1,100000))
         sl.sort()
         for i in range(100000, 200000):
-            assert sl.binary_search(i) == -1
+            assert sl.binarySearch(i) == -1
         for i in range(10000):
             sl.insort(i)
             sl.insort(i, right=True)
@@ -230,10 +204,10 @@ class TestIteralgos(unittest.TestCase):
         sl.sort()
         for i in range(100000):
             self.assertEqual(tmp[i], sl[i])
-        s = sl.makeset()
-        d = sl.makedict(False)
+        s = sl.makeSet()
+        d = sl.makeDict(False)
         self.assertTrue(len(s) <= len(d))
-        d = sl.makedict(True)
+        d = sl.makeDict(True)
         self.assertTrue(len(s) == len(d))
         self.assertTrue(len(d) <= len(sl))
 

@@ -6,56 +6,69 @@ import os
 import re
 from abc import abstractmethod, ABCMeta
 from _io import open, DEFAULT_BUFFER_SIZE
-from magic3.filesystem import userdir,list_dir
+from magic3.filesystem import userDir,listDir
 
-best_io_buffer_size = DEFAULT_BUFFER_SIZE << 1
+bestIOBufferSize = DEFAULT_BUFFER_SIZE << 1
 
 class LineParserBase(metaclass=ABCMeta):
-    """ inherit this class and implement `run` and `parseline` method """
-    def __init__(self, fdir=None, files=None, xvalid='.*'):
-        self._dir = fdir
-        self._files = files if files else []
-        self._valid = re.compile(xvalid)
-        self.check_args()
+    """ inherit this class and implement `run` and `parseLine` method """
+    def __init__(self, fileNames=[], fileDir='', nameFilter='.*'):
+        self._files = fileNames if fileNames else []
+        self._dir = fileDir
+        self._filter = re.compile(nameFilter)
+        self.checkArgs()
     
-    def check_args(self):
+    def checkArgs(self):
         if self._dir and not isinstance(self._dir, str):
             raise TypeError
-        if self._dir and not self._dir.startswith(userdir()):
-            self._dir = userdir() + self._dir.lstrip(os.sep)
+        if self._dir and not self._dir.startswith(userDir()):
+            self._dir = userDir() + self._dir.lstrip(os.sep)
         if self._files and not isinstance(self._files, (list, tuple, set)):
             raise TypeError
         if not self._dir and not self._files:
             raise ValueError
         if self._dir:
-            toparse = [fn for fn in list_dir(self._dir, lambda s:self._valid.match(s))]
+            tmp = [fn for fn in listDir(self._dir, lambda s:self._filter.match(s))]
         else:
-            toparse = []
-        toparse.extend(fn for fn in self._files if self._valid.match(fn))
-        self._files = toparse
+            tmp = []
+        tmp.extend(fn for fn in self._files if self._filter.match(fn))
+        self._files = tuple(tmp)
         return self._files
 
     def read(self, fn, mode='rb', encoding='utf-8', errors='replace'):
-        bufsize = best_io_buffer_size
+        bufsize = bestIOBufferSize
         if 'b' in mode:
             for line in open(fn, mode, buffering=bufsize):
-                self.parseline(line.rstrip())
+                self.parseLine(line.rstrip())
         else:
             for line in open(fn, mode, buffering=bufsize, encoding=encoding, errors=errors):
-                self.parseline(line.rstrip())
+                self.parseLine(line.rstrip())
     
-    def read_all(self, mode='rb'):
+    def readAll(self, mode='rb'):
         for fn in self._files:
             self.read(fn, mode)
     
     @abstractmethod
-    def parseline(self, line):
+    def parseLine(self, line):
         raise NotImplementedError
     
-    @abstractmethod
     def run(self):
-        raise NotImplemented
+        self.readAll()
 
 
+def test():
+    class Parser(LineParserBase):
+        def __init__(self, name):
+            super().__init__(fileNames=[name])
+            self.count = 0
+        def parseLine(self, line):
+            words = [s for s in line.split() if len(s) >= 1]
+            self.count += len(words)
+    p = Parser(__file__)
+    p.run()
+    print(p.count)
+
+if __name__ == '__main__':
+    test()
 
 

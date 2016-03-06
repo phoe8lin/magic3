@@ -7,11 +7,11 @@ from urllib.parse import quote
 import pymongo
 from pymongo import MongoClient, ReadPreference
 from bson.code import Code
-from magic3.utils import time_meter, print_exception, loadjson
+from magic3.utils import timeMeter, printException, loadJson
 
 # default mongodb host and port
-MONGO_ADDR = ('localhost', 27017)
-MONGO_HOST, MONGO_PORT = MONGO_ADDR
+DefaultAddress = ('localhost', 27017)
+DefaultHost, DefaultPort = DefaultAddress
 MongoErrors = pymongo.errors.PyMongoError
 
 """ OpMongo's constructor kwargs like:
@@ -33,23 +33,19 @@ class OpMongo(object):
         password = kwargs['password']
         dbname = kwargs['dbname']
         if not password:
-            con_uri = host
+            uri = host
         else:
-            con_uri = 'mongodb://%s:%s@%s:%d/%s' % (username,quote(password),host,port,dbname)
-        try:
-            self._mc = MongoClient(con_uri)
-            self._db = self._mc[dbname]
-            self._collection = None
-        except Exception as e:
-            print_exception('OpMongo.__init__')
-            raise e
+            uri = 'mongodb://%s:%s@%s:%d/%s' % (username,quote(password),host,port,dbname)
+        self._mc = MongoClient(uri)
+        self._db = self._mc[dbname]
+        self._collection = None
 
     def __del__(self):
         """ close on exit """
         if self._mc:
             self._mc.close()
-        
-    def lists(self):
+    
+    def listCollections(self):
         """ return collection names current """
         assert self._db
         return deepcopy(self._db.collection_names())
@@ -89,7 +85,7 @@ class OpMongo(object):
         objects_id = self._collection.insert(docs, fsync)
         return objects_id
     
-    def insert_noexcept(self, docs, fsync = False)->object:
+    def insertNoException(self, docs, fsync = False)->object:
         """ insert doc, if fsync is True, will be very very slow! """
         try:
             objects_id = self._collection.insert(docs, fsync)
@@ -101,13 +97,13 @@ class OpMongo(object):
         """ count of current collection """
         return self._collection.count()
     
-    def create_indexes(self, indexlist, unique=False)->list:
+    def createIndexes(self, indexlist, unique=False)->list:
         """ create indexes(means not only one) on current collection if enable """ 
         if not isinstance(indexlist, (list, tuple, set)):
             raise TypeError('indexlist shoule be list/tuple/set')
         return [self._collection.create_index(i, unique=unique) for i in indexlist]
     
-    def find_one(self, query)->'cursor':
+    def findOne(self, query)->'cursor':
         """ query and return only one doc if found """
         cursor = self._collection.find_one(query)
         return cursor
@@ -125,7 +121,7 @@ class OpMongo(object):
             cursor.sort(sortkey, pymongo.DESCENDING if reverse else pymongo.ASCENDING)
         return cursor
     
-    def find_fields(self, query, fields:list):
+    def findFields(self, query, fields:list):
         """ find doc specified by `query`, if `sortkey`, sort result """
         cursor = self._collection.find(query, fields)
         return cursor
@@ -134,16 +130,17 @@ class OpMongo(object):
         return self._collection.distinct(key)
 
 
-
-@time_meter(__name__)
-def test(jsonfile):
+@timeMeter(__name__)
+def test():
     ''' Simple tester for opmongo '''
-    cfg = loadjson(jsonfile)
+    cfg = {'host':DefaultHost, 'port':DefaultPort, 'username':'root', 'password':'', 'dbname':'test'}
     db = OpMongo(**cfg)
-    colls = db.lists()
+    colls = db.listCollections()
     print(colls)
     db.choose(colls[0])
     print(list(db.find({}, explain=True)))
 
 
+if __name__ == '__main__':
+    test()
 

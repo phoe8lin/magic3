@@ -22,7 +22,7 @@ xValidURL = re.compile("^https?://\\w+[^\\s]*$(?ai)")
 # default cookie filename 
 cookieFileName = os.path.expanduser('~') + os.sep + 'cookie.tmp.txt'
 
-def set_cookie_filename(fname:str):
+def setCookieFilename(fname:str):
     """ ensure fn is a correct filename with full path """
     global cookieFileName
     cookieFileName = fname
@@ -74,26 +74,26 @@ class CurlFetcher(object):
     """ fetch urls using pycurl, a wrapper of Curl object """
     def __init__(self):
         """ `url` should be a string match standard URL """
-        self._response_header = bytearray()
+        self._responseHeader = bytearray()
         self._curl = pycurl.Curl()
-        self._curl.setopt(pycurl.HEADERFUNCTION, self._curl_header_function)
+        self._curl.setopt(pycurl.HEADERFUNCTION, self._curlHeaderFunction)
         if usingCurlShare:
             self._curl.setopt(pycurl.SHARE, globalCURLShare)
         self.setopt()
-        
-    def _curl_header_function(self, buf):
+
+    def _curlHeaderFunction(self, buf):
         """ append new http head lines """
-        self._response_header += buf
+        self._responseHeader += buf
         return len(buf)
     
-    def setopt(self, header = curlHeader, max_redirect = 9, follow_location = 1, forbid_reuse = 1, connect_timeout = requestTimeout):
+    def setopt(self, header = curlHeader, maxRedirect = 9, followLocation = 1, forbidReuse = 1, connectTimeout = requestTimeout):
         """ set options for CURL, do Not change default options if not sure the meaning """
         setopt = self._curl.setopt
         setopt(pycurl.VERBOSE, 0)
         setopt(pycurl.HTTPHEADER, header)
-        setopt(pycurl.FOLLOWLOCATION, follow_location)
-        setopt(pycurl.MAXREDIRS, max_redirect)
-        setopt(pycurl.FORBID_REUSE, forbid_reuse)
+        setopt(pycurl.FOLLOWLOCATION, followLocation)
+        setopt(pycurl.MAXREDIRS, maxRedirect)
+        setopt(pycurl.FORBID_REUSE, forbidReuse)
         setopt(pycurl.CONNECTTIMEOUT, requestTimeout)
         setopt(pycurl.TIMEOUT, requestTimeout * 2)
         setopt(pycurl.NOSIGNAL, 1) 
@@ -107,7 +107,7 @@ class CurlFetcher(object):
         """ fetch url using 'GET' method """
         if not xValidURL.match(url):
             raise ValueError('CurlFetcher: {u} is not correct'.format(u=url))
-        self._response_header.clear()
+        self._responseHeader.clear()
         try:
             bio = io.BytesIO()
             self._curl.setopt(pycurl.HTTPGET, 1)
@@ -121,9 +121,9 @@ class CurlFetcher(object):
             debug('{e}: {u}'.format(e=str(e), u=url))
             return None
         if callback:
-            return callback(Response(url, bytes(self._response_header), bio.getvalue()))
+            return callback(Response(url, bytes(self._responseHeader), bio.getvalue()))
         else:
-            return Response(url, bytes(self._response_header), bio.getvalue())
+            return Response(url, bytes(self._responseHeader), bio.getvalue())
     
     def close(self):
         """ release resource """
@@ -136,20 +136,20 @@ class CrawlerTimeoutError(RuntimeError):
 
 class CurlCrawler(threading.Thread):
     """ crawler based on multithreads and pycurl """
-    def __init__(self, urls:list, max_threads:int, callback):
-        """ `max_threads` should not be too large, less than 50 is always enough
+    def __init__(self, urls:list, maxThreads:int, callback):
+        """ `maxThreads` should not be too large, less than 50 is always enough
             `callback` is a user function with Response as the unique argument  """
         assert isinstance(urls, (list, tuple, set))
-        assert max_threads >= 1
-        self._init(urls, max_threads, callback)
+        assert maxThreads >= 1
+        self._init(urls, maxThreads, callback)
 
-    def _init(self, urls, max_threads, callback):
+    def _init(self, urls, maxThreads, callback):
         self._results = []
         self._callback = callback
-        if max_threads > maxThreads:
-            max_threads = maxThreads
+        if maxThreads > maxThreads:
+            maxThreads = maxThreads
         self._fetchers = [
-            threading.Thread(target=self._dispatch, args=(CurlFetcher(),)) for i in range(max_threads)
+            threading.Thread(target=self._dispatch, args=(CurlFetcher(),)) for i in range(maxThreads)
         ]
         self._queue = queue.Queue(len(urls) + len(self._fetchers))
         for url in urls:
@@ -181,7 +181,7 @@ class CurlCrawler(threading.Thread):
             finally:
                 self._queue.task_done()
         if __debug__:
-            debug('{t} finished {n}'.format(t=threading.current_thread().name, n=count))
+            debug('{t} finished {n}'.format(t=threading.currentThread().name, n=count))
 
     def finished(self)->bool:
         """ if all finished return True """
@@ -191,11 +191,11 @@ class CurlCrawler(threading.Thread):
     
     def start(self, timeout):
         """ start to run, raise if still running after `timeout` seconds """
-        def _timer(fetchers):
+        def Timer(fetchers):
             threading.Event().wait(timeout)
             if any(fetchers):
                 raise CrawlerTimeoutError
-        timer = threading.Thread(target=_timer, args=(self._fetchers,))
+        timer = threading.Thread(target=Timer, args=(self._fetchers,))
         timer.daemon = True
         timer.start()
         for t in self._fetchers:
@@ -235,7 +235,7 @@ class AsyncioCrawler(object):
         return self._results
 
     @asyncio.coroutine
-    def _wrapped_callback(self, r):
+    def _wrappedCallback(self, r):
         """ user's callback may be not a coroutine, so wrap it! """
         return self._callback(r)
 
@@ -252,7 +252,7 @@ class AsyncioCrawler(object):
             r = yield from self._fetch(url)
             r.headers['status'] = '{0} {1}'.format(r.status_code, r.reason)
             if self._callback:
-                ret = yield from self._wrapped_callback(Response(url, r.headers, r.content))
+                ret = yield from self._wrappedCallback(Response(url, r.headers, r.content))
             else:
                 ret = Response(url, r.headers, r.content)
             r.close()
@@ -291,17 +291,17 @@ class AsyncioCrawler(object):
 
 def test(urls):
     ''' simple test for crawler '''
-    def user_callback(r):
+    def userCallback(r):
         debug(r.url, end=' ')
         if isinstance(r.header, bytes):
             debug(r.header.split(b'\r\n')[0], len(r.content))
         else:
             debug(r.header['status'], len(r.content))
     debug('CurlCrawler')
-    crawler = CurlCrawler(urls, 3, user_callback)
+    crawler = CurlCrawler(urls, 3, userCallback)
     crawler.start(30)
     debug('AsyncioCrawler')
-    crawler = AsyncioCrawler(urls, user_callback)
+    crawler = AsyncioCrawler(urls, userCallback)
     crawler.start(30)
 
 
@@ -319,5 +319,6 @@ if __name__ == '__main__':
              'http://www.sohu.com', 
              'http://www.tmall.com'  ]
     test(urls)
+    debug('test OK')
 
 

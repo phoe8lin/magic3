@@ -45,7 +45,7 @@ class OpMysql(object):
             self._cur.close()
             self._con.close()
     
-    def select_database(self, dbname):
+    def switchDatabase(self, dbname):
         """ change database """
         with self._lock:
             self._con.select_db(dbname)
@@ -58,7 +58,7 @@ class OpMysql(object):
             self._con.commit()  
             cur.close()          
             
-    def execute_nocommit(self, sql, args = None):
+    def executeNoCommit(self, sql, args = None):
         """ execute SQL on selected database without commit """
         with self._lock:
             self._cur.execute(sql, args = args)
@@ -91,17 +91,22 @@ class OpMysql(object):
 
 
 def test():
-    dbf = OpMysql(username='root', password=getpass(),
+    mydb = OpMysql(username='root', password=getpass(),
                   host='localhost', port='3306', database='mysql')
-    dbf.select_database('mysql')
+    mydb.switchDatabase('mysql')
     
-    print(dbf.query("""SELECT * FROM `user` LIMIT %d;""" % (10,), True))
+    debug(mydb.query("""SELECT * FROM `user` LIMIT %d;""" % (10,), True))
 
     sql = """SELECT * FROM `user` WHERE host=%s;"""
-    cur = dbf.fetch(sql, ("localhost",))
+    cur = mydb.fetch(sql, ("localhost",))
     for i in cur:
-        print(i)
+        debug(i)
     
-    result = dbf.fetch(sql = """SELECT COUNT(*) FROM `user`""", args = None, size = -1)
-    print(result)
+    result = mydb.fetch(sql = """SELECT COUNT(*) FROM `user`""", args = None, size = -1)
+    debug(result)
+
+
+if __name__ == '__main__':
+    test()
+
 

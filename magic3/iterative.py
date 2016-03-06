@@ -23,17 +23,17 @@ def advance(iterator, n):
     else:
         next(islice(iterator, n, n), None)
 
-def pad_none(iterable):
+def padNone(iterable):
     """ returns the sequence elements and then returns None indefinitely """
     return chain(iterable, repeat(None))
 
-def repeat_func(func, times=None, *args):
+def repeatCall(func, times=None, *args):
     """ repeat calls to func with specified arguments """
     if times is None:
         return starmap(func, repeat(args))
     return starmap(func, repeat(args, times))
 
-def round_robin(*iterables):
+def roundRobin(*iterables):
     """ roundrobin('ABC', 'D', 'EF') --> A D E B F C """
     pending = len(iterables)
     nexts = cycle(iter(it).__next__ for it in iterables)
@@ -56,16 +56,16 @@ def powerset(iterable):
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
 
-def iter_except(func, exception, first=None):
+def iterExcept(func, exception, first=None):
     """ call a function repeatedly until an exception is raised. Converts 
         a call-until-exception interface to an iterator interface. Like 
         builtins.iter(func, sentinel) but uses an exception instead of a 
         sentinel to end the loop. Examples:
-        iter_except(functools.partial(heappop, h), IndexError)   # priority queue iterator
-        iter_except(d.popitem, KeyError)                         # non-blocking dict iterator
-        iter_except(d.popleft, IndexError)                       # non-blocking deque iterator
-        iter_except(q.get_nowait, Queue.Empty)                   # loop over a producer Queue
-        iter_except(s.pop, KeyError)                             # non-blocking set iterator
+        iterExcept(functools.partial(heappop, h), IndexError)   # priority queue iterator
+        iterExcept(d.popitem, KeyError)                         # non-blocking dict iterator
+        iterExcept(d.popleft, IndexError)                       # non-blocking deque iterator
+        iterExcept(q.get_nowait, Queue.Empty)                   # loop over a producer Queue
+        iterExcept(s.pop, KeyError)                             # non-blocking set iterator
     """
     try:
         if first is not None:
@@ -75,46 +75,46 @@ def iter_except(func, exception, first=None):
     except exception:
         pass
 
-def first_true(iterable, default=False, pred=None):
+def firstTrue(iterable, default=False, pred=None):
     """ returns the first true value in the iterable. If no true value is found, 
         returns *default* If *pred* is not None, returns the first item for which
         pred(item) is true. 
-        first_true([a,b,c], x) --> a or b or c or x
-        first_true([a,b], x, f) --> a if f(a) else b if f(b) else x """
+        firstTrue([a,b,c], x) --> a or b or c or x
+        firstTrue([a,b], x, f) --> a if f(a) else b if f(b) else x """
     return next(filter(pred, iterable), default)
 
-def random_select(iterable, n):
+def randomSelect(iterable, n):
     """ select n random elements from iterable """
     pool = tuple(iterable)
     indices = sorted(random.sample(range(len(pool)), n))
     return tuple(pool[i] for i in indices)
 
-def random_product(*args, repeat=1):
+def randomProduct(*args, repeat=1):
     " random selection from itertools.product(*args, **kwds) "
     pools = [tuple(pool) for pool in args] * repeat
     return tuple(random.choice(pool) for pool in pools)
 
-def random_permutation(iterable, r=None):
+def randomPermutation(iterable, r=None):
     " random selection from itertools.permutations(iterable, r) "
     pool = tuple(iterable)
     r = len(pool) if r is None else r
     return tuple(random.sample(pool, r))
 
-def random_combination(iterable, r):
+def randomCombination(iterable, r):
     " random selection from itertools.combinations(iterable, r) "
     pool = tuple(iterable)
     n = len(pool)
     indices = sorted(random.sample(range(n), r))
     return tuple(pool[i] for i in indices)
 
-def random_combination_with_replacement(iterable, r):
+def randomCombinationWithReplacement(iterable, r):
     "random selection from itertools.combinations_with_replacement(iterable, r)"
     pool = tuple(iterable)
     n = len(pool)
     indices = sorted(random.randrange(n) for _ in range(r))
     return tuple(pool[i] for i in indices)
 
-def dotproduct(vec1, vec2):
+def dotProduct(vec1, vec2):
     """ dot product of vectors, len(vec1) should be equalto len(vec2) """
     return sum(map(_mul, vec1, vec2))
 
@@ -127,7 +127,7 @@ def foreach2(func1, func2, iterable):
     for each in iterable:
         yield func2(func1(each))
 
-def until_fail(fun, exception, iterable, *args):
+def untilFail(fun, exception, iterable, *args):
     """ call fun with element in iterable and args until exception specified raised """
     n = 0
     try:
@@ -146,7 +146,7 @@ def quantify(iterable, pred = bool):
     """ sum of pred(iterable) """
     return sum(map(pred, iterable))
 
-def chain_cycles(iterable, n):
+def chainCycles(iterable, n):
     """ cycle iterators of iterable, n times """
     return chain.from_iterable(repeat(tuple(iterable), n))
 
@@ -165,7 +165,7 @@ def grouper(iterable, n, fillvalue = None):
     args = [iter(iterable)] * n
     return zip_longest(fillvalue=fillvalue, *args)
 
-def everseen(iterable, key=None):
+def everSeen(iterable, key=None):
     """ yield only seen before element from iterable """
     seen = set()
     seen_add = seen.add
@@ -180,7 +180,7 @@ def everseen(iterable, key=None):
                 seen_add(k)
                 yield element
 
-def justseen(iterable, key=None):
+def justSeen(iterable, key=None):
     """ yield just seen element from iterable """
     return map(next, map(_itemgetter(1), groupby(iterable, key)))
 
@@ -202,8 +202,8 @@ class TestIteralgos(unittest.TestCase):
     def test_powerset(self):
         self.assertEqual(list(powerset([1,2,3])), [(),(1,),(2,),(3,),(1,2),(1,3),(2,3),(1,2,3)])
     
-    def test_dotproduct(self):
-        self.assertEqual(dotproduct(self.p, self.q), 140)
+    def test_dotProduct(self):
+        self.assertEqual(dotProduct(self.p, self.q), 140)
     
     def test_advance(self):
         i = iter(self.a)
@@ -213,10 +213,10 @@ class TestIteralgos(unittest.TestCase):
     def test_ntake(self):
         self.assertEqual(['aa', 'bb'], list(ntake(self.s, 0, 2)))
     
-    def test_untilfail(self):
+    def test_untilFail(self):
         def _fun(x):
             return x * 2
-        self.assertEqual(until_fail(_fun, StopIteration, self.q), 5)
+        self.assertEqual(untilFail(_fun, StopIteration, self.q), 5)
     
     def test_nth(self):
         self.assertEqual(nth(self.s, 3, None), 'dd')
@@ -226,17 +226,17 @@ class TestIteralgos(unittest.TestCase):
         self.assertEqual(quantify(self.q, lambda x : x > 5), 2)
         self.assertEqual(quantify(self.s, lambda s : s == 'ee'), 1)
     
-    def test_seqcycles(self):
+    def test_chainCycles(self):
         a = (3, 2, 1)
-        self.assertEqual(list(chain_cycles(a, 2)), [3,2,1,3,2,1])
+        self.assertEqual(list(chainCycles(a, 2)), [3,2,1,3,2,1])
     
     def test_flatten(self):
         ll = [{1,2}, [3,4], (5,6)]
         self.assertEqual(list(flatten(ll)), [1,2,3,4,5,6])
     
-    def test_repeat_func(self):
+    def test_repeatCall(self):
         n = 0
-        for i in repeat_func(random.random, 3):
+        for i in repeatCall(random.random, 3):
             n += 1
             self.assertTrue(i >= 0 and i <= 1.0)
         self.assertEqual(n, 3)
@@ -247,18 +247,18 @@ class TestIteralgos(unittest.TestCase):
     def test_grouper(self):
         self.assertEqual(list(grouper(self.p, 2, None)), [(1, 3), (5, 7), (9, None)])
     
-    def test_round_robin(self):
+    def test_roundRobin(self):
         a = ['aa', 0, 1, 'bb', 2, 3, 'cc', 4, 5, 'dd', 6, 7, 'ee', 8, 9]
-        self.assertEqual(list(round_robin(self.s, self.q, self.p)), a)
+        self.assertEqual(list(roundRobin(self.s, self.q, self.p)), a)
     
-    def test_everseen(self):
-        self.assertEqual(list(everseen("AAABCCDDDDEFABC")), ['A','B','C','D','E','F'])
+    def test_everSeen(self):
+        self.assertEqual(list(everSeen("AAABCCDDDDEFABC")), ['A','B','C','D','E','F'])
     
-    def test_justseen(self):
-        self.assertEqual(list(justseen("AAABBCCDDDDEFABC")),
+    def test_justSeen(self):
+        self.assertEqual(list(justSeen("AAABBCCDDDDEFABC")),
                          ['A', 'B', 'C', 'D', 'E', 'F', 'A', 'B', 'C'])
-    def test_randselect(self):
-        self.assertEqual(len(random_select(self.a, 3)), 3)
+    def test_randomSelect(self):
+        self.assertEqual(len(randomSelect(self.a, 3)), 3)
     
 
 if __name__ == '__main__':

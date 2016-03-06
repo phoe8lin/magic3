@@ -107,7 +107,7 @@ def print_(*args, **kwargs):
     write(end)
 
 
-def bound_socket(*args, **kwargs):
+def boundSocket(*args, **kwargs):
     global source
     sock = socket_socket(*args, **kwargs)
     sock.bind((source, 0))
@@ -416,7 +416,7 @@ def speedtest():
 
     if args.source:
         source = args.source
-        socket.socket = bound_socket
+        socket.socket = boundSocket
 
     if not args.simple:
         print_('Retrieving speedtest.net configuration...')

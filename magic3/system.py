@@ -4,7 +4,6 @@
 """ this module only works on unix/linux systems!!! """
 from subprocess import Popen, PIPE, getstatusoutput
 
-
 class OSCommand(object):
     """ call system command, all methods are staticmethod """
     @staticmethod
@@ -23,21 +22,21 @@ class OSCommand(object):
         return Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
 
     @staticmethod
-    def process_count(keyword:str)->tuple:
+    def processCount(keyword:str)->tuple:
         """ count process specified in `keyword` using 'ps|egrep' system command """
         output = Popen('ps ax | egrep %s' % keyword, shell=True, stdout=PIPE)
         return tuple(line for line in map(lambda l:l.decode('utf-8').rstrip(), output.stdout)
                      if 'egrep '+keyword not in line)
 
     @staticmethod
-    def process_countex(keyword:str, exclude:str)->tuple:
+    def processCountEx(keyword:str, exclude:str)->tuple:
         """ like process_count, but exclude `exclude` word """
         output = Popen('ps ax | egrep %s' % keyword, shell=True, stdout=PIPE)
         return tuple(line for line in map(lambda l:l.decode('utf-8').rstrip(), output.stdout)
                      if 'egrep '+keyword not in line and exclude not in line)
 
     @staticmethod
-    def getpid(keyword:str)->tuple:
+    def getPid(keyword:str)->tuple:
         """ getpid """
         output = getstatusoutput('pgrep %s' % keyword)
         return tuple(int(i) for i in output[-1].split('\n'))
@@ -52,12 +51,12 @@ def test():
     print(p.stdout.read().decode('utf-8'))
     print()
     print('count "python3"')
-    print(OSCommand.process_count('python3'))
+    print(OSCommand.processCount('python3'))
     print()
     print('count "python3" but not "pydev"')
-    print(OSCommand.process_countex('python3', 'pydev'))
+    print(OSCommand.processCountEx('python3', 'pydev'))
     print()
-    print(OSCommand.getpid('python3'))
+    print(OSCommand.getPid('python3'))
     print()
     for _ in range(3):
         print(OSCommand.execute('uptime', True).decode('utf-8'))

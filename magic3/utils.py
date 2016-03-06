@@ -8,9 +8,9 @@ from base64 import b64encode, b64decode
 from ipaddress import ip_address
 from time import time, strftime, sleep
 
-def is_valid_ip(ip)->bool:
+def isValidIP(ip)->bool:
     """ Returns true if the given string is a well-formed IP address(v4/v6) """
-    def _from_str(_ip):
+    def _fromStr(_ip):
         if not _ip or '\x00' in _ip:
             return False
         try:
@@ -18,17 +18,18 @@ def is_valid_ip(ip)->bool:
             return bool(res)
         except Exception:
             return False
-    def _from_int(_ip):
+    def _fromInt(_ip):
         try: 
             ip_address(_ip)
             return True
         except ValueError:
             return False
     if isinstance(ip, str): 
-        return _from_str(ip)
+        return _fromStr(ip)
     elif isinstance(ip, int):  
-        return _from_int(ip)
-    else: raise TypeError('is_valid_ip')
+        return _fromInt(ip)
+    else: 
+        raise TypeError('isValidIP')
 
 class IPv4Macher:
     pattern = "^\
@@ -37,8 +38,9 @@ class IPv4Macher:
 ([0-9]|[1-9][0-9]|1\d\d|2[0-4]\d|25[0-5])\.\
 ([0-9]|[1-9][0-9]|1\d\d|2[0-4]\d|25[0-5])$"
     compiled = re.compile(pattern)
+    compiled2 = re.compile(pattern.encode(encoding='utf-8'))
 
-def obj2bytes(obj:object)->bytes:
+def toBytes(obj:object)->bytes:
     """ make object to bytes if supports, using `ascii` as defualt encode """
     if isinstance(obj, str):
         try:
@@ -49,7 +51,7 @@ def obj2bytes(obj:object)->bytes:
         return obj
     return memoryview(obj).tobytes()
 
-def recursive_encode(s:str, level:int=10)->str:
+def recursiveEncode(s:str, level:int=10)->str:
     """ recursive encode `s` using base64,
         `level` is depth of recursive, the max value is 32 """
     assert level <= 32
@@ -57,43 +59,34 @@ def recursive_encode(s:str, level:int=10)->str:
         return str(s, 'utf-8')
     if not isinstance(s, (bytearray,bytes)):
         s = bytes(s, 'utf-8')
-    return recursive_encode(b64encode(s), level-1)
+    return recursiveEncode(b64encode(s), level-1)
 
-def recursive_decode(s:str, level:int=10)->str:
-    """ recursive decode `s`(encoded by `recursive_encode`) using base64,
+def recursiveDecode(s:str, level:int=10)->str:
+    """ recursive decode `s`(encoded by `recursiveEncode`) using base64,
         `level` is depth of recursive, the max value is 32 """
     assert level <= 32
     if level <= 0:
         return str(s, 'utf-8')
     if not isinstance(s, (bytearray,bytes)):
         s = bytes(s, 'utf-8')
-    return recursive_decode(b64decode(s), level-1)
-
-def trime(line):
-    """ strip endl of line, note strip has side effect """
-    return line.rstrip('\r\n')
-
-def trime2(line:bytes)->bytes:
-    """ strip endl of line, note strip has side effect """
-    return line.rstrip(b'\r\n')
+    return recursiveDecode(b64decode(s), level-1)
 
 def utf8(s, errors='replace')->str:
     """ transform s to 'utf-8' coding """ 
     return str(s, 'utf-8', errors=errors)
 
-def loadjson(filename, objhook=None)->dict:
+def loadJson(name, objHook=None)->dict:
     """ load json from file return dict """
-    with open(filename, encoding='utf-8', errors='replace') as f:
-        return json.loads(f.read(), encoding = 'utf-8', object_hook = objhook)
+    with open(name, encoding='utf-8', errors='replace') as f:
+        return json.loads(f.read(), encoding='utf-8', object_hook=objHook)
 
-def dumpjson(objs:dict, objhook=None, filename=None)->str:
+def dumpJson(obj:dict, name=None)->str:
     """ dump json(dict) to file """
-    if objhook: s = json.dumps(list(map(objhook, objs)), indent=4, ensure_ascii=False)
-    else:       s = json.dumps(objs, indent=4, ensure_ascii=False)
-    if filename:
-        with open(filename, 'w') as f:
-            f.write(s)
-    return s
+    str = json.dumps(obj, indent=4, ensure_ascii=False)
+    if name:
+        with open(name, 'w') as f:
+            f.write(str)
+    return str
 
 def debug(*args, **kwargs):
     """ print to stderr not stdout """
@@ -119,38 +112,34 @@ class DummyLock(object):
     def acquire(self, *args, **kwargs): pass
     def release(self, *args, **kwargs): pass
 
-def stdtime():
+def isotime():
     """ return iso datetime, like 2014-03-28 19:45:59 """ 
     return strftime('%Y-%m-%d %H:%M:%S')
 
-def is_time_point(time_in_24h_format):
+def isTimePoint(timeIn24hFormat):
     """ check now is specify time """
-    return strftime('%H:%M:%S') == time_in_24h_format
+    return strftime('%H:%M:%S') == timeIn24hFormat
 
-def wait_until(time_in_24h_format):
+def waitUntil(timeIn24hFormat):
     """ return until now is hour:minute:second """
     while True:
-        if strftime('%H:%M:%S') == time_in_24h_format:
+        if strftime('%H:%M:%S') == timeIn24hFormat:
             break
         sleep(0.5)
 
-def time_meter(src=os.path.basename(__file__)):
+def timeMeter(src=os.path.basename(__file__)):
     """ print time when enter wrapped function and leave wrapped function """
     def _wrapper(func):
         @functools.wraps(func)
         def _call(*args, **kwargs):
-            debug(stdtime() + (' %s : %s started...' % (src, _call.__name__)))
+            debug(isotime() + (' %s : %s started...' % (src, _call.__name__)))
             ret = func(*args, **kwargs)
-            debug(stdtime() + (' %s : %s finished...' % (src, _call.__name__)))
+            debug(isotime() + (' %s : %s finished...' % (src, _call.__name__)))
             return ret
         return _call
     return _wrapper
 
-def classname(obj):
-    """ return class name """
-    return str(obj.__class__)[9:-2]
-
-def print_exception(name, output=sys.stderr):
+def printException(name, output=sys.stderr):
     """ print exception with extra info(name) and limit traceback in 2 """
     assert name
     assert output is sys.stderr or output is sys.stdout
@@ -161,7 +150,7 @@ def print_exception(name, output=sys.stderr):
 
 class IOFlusher(Thread):
     """ used for global io flusher """
-    def __init__(self, delay=10, ios=(sys.stdout, sys.stderr)):
+    def __init__(self, delay=5, ios=(sys.stdout, sys.stderr)):
         """ flush stdout/stderr every `delay` seconds """
         Thread.__init__(self)
         self.daemon = True
@@ -178,7 +167,7 @@ class IOFlusher(Thread):
 # the global io flusher
 __flusher = IOFlusher()
 
-def run_stdio_flusher()->bool:
+def runIoFlusher()->bool:
     """ make global io flusher running, call only once in '__main__' """
     global __flusher
     if __flusher.is_alive():
@@ -203,9 +192,8 @@ class Timer(object):
     def show(self):
         print(str(self))
 
-def python_version()->tuple:
-    ''' get python version tuple like (3, 4) '''
-    return sys.version_info.major, sys.version_info.minor
+# get python version tuple like (3, 4)
+PythonVersion = (sys.version_info.major, sys.version_info.minor)
 
 def singleton(cls, *args, **kw):
     """ singleton object wrapper, usage:
@@ -219,4 +207,29 @@ def singleton(cls, *args, **kw):
             instances[cls] = cls(*args, **kw)
         return instances[cls]
     return _object
+
+
+def test():
+    assert(isValidIP('127.0.0.1'))
+    assert(isValidIP('4.4.4.4'))
+    assert(isValidIP('192.168.255.0'))
+    assert(isValidIP('::1'))
+    assert(isValidIP('2620:0:1cfe:face:b00c::3'))
+    assert(not isValidIP('www.google.com'))
+    assert(not isValidIP('localhost'))
+    assert(not isValidIP('[4.4.4.4]'))
+    assert(not isValidIP('127.0.0.1.2.3'))
+    assert(not isValidIP('123123123123'))
+    assert(not isValidIP('\x00\x01\x02\x03'))
+    assert(not isValidIP('123.123.321.456'))
+    assert(not isValidIP(''))
+    assert(isTimePoint(isotime().split()[1]))
+    t = isotime().split()[1]
+    sleep(1)
+    assert(not isTimePoint(t))
+    print(dumpJson({t:'go', 'key':PythonVersion}))
+
+if __name__ == '__main__':
+    test()
+
 
