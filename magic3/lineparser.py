@@ -35,7 +35,7 @@ class LineParserBase(metaclass=ABCMeta):
         self._files = tuple(tmp)
         return self._files
 
-    def read(self, fn, mode='rb', encoding='utf-8', errors='replace'):
+    def read(self, fn, mode='rb', encoding='utf-8-sig', errors='replace'):
         bufsize = bestIOBufferSize
         if 'b' in mode:
             for line in open(fn, mode, buffering=bufsize):

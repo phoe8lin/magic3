@@ -10,7 +10,7 @@ except Exception:
 
 def readCSV(name:str, delim=',', 
             withhead=False, strip=True, convert=None, 
-            encoding='utf-8', errors='strict')->([],[]):
+            encoding='utf-8-sig', errors='strict')->([],[]):
     """ read csv file, return head and body as list """
     if convert and strip:
         make = lambda s: convert(s.strip(b'" ').decode(encoding, errors))
@@ -49,7 +49,7 @@ def writeCSV(name:str, delim:str, body:list, head:list,
                 bodyFormat = delim.join(['%s']*numpy.shape(body)[0]) + '\n'
     elif not bodyFormat.endswith('\n'):
         bodyFormat += '\n'
-    with open(name, 'w') as fout:
+    with open(name, 'w', encoding='utf-8-sig') as fout:
         nlines = 0
         if head:
             nlines += 1
@@ -128,7 +128,7 @@ class BivTable(BivTableBase):
     def __init__(self, head=[], body=[]):
         super().__init__(head, body)
 
-    def read(self, name, delim=',', withhead=False, strip=False, convert=None, encoding='utf-8'):
+    def read(self, name, delim=',', withhead=False, strip=False, convert=None, encoding='utf-8-sig'):
         """ read from file, `convert` should be a function like int/str/float/lambda """
         self.head, self.body = readCSV(name, delim, withhead, strip, convert, encoding)
         self.check(self.head, self.body)
