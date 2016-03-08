@@ -3,7 +3,6 @@
 # note   : python3.4+
 import os, sys, traceback, socket
 import json, re, functools
-from threading import Thread 
 from base64 import b64encode, b64decode
 from ipaddress import ip_address
 from time import time, strftime, sleep
@@ -147,33 +146,6 @@ def printException(name, output=sys.stderr):
     exc_type = str(exc_type).lstrip('class <').rstrip('>')
     sys.stderr.write('%s : %s from :%s\n' % (exc_type, exc_val, name))
     traceback.print_tb(exc_tb, limit=2, file=output)
-
-class IOFlusher(Thread):
-    """ used for global io flusher """
-    def __init__(self, delay=5, ios=(sys.stdout, sys.stderr)):
-        """ flush stdout/stderr every `delay` seconds """
-        Thread.__init__(self)
-        self.daemon = True
-        self._ios = ios
-        self._delay = delay
-    
-    def run(self):
-        """ run in a daemon thread forever """
-        while True:
-            for each in self._ios:
-                each.flush()
-            sleep(self._delay)
-
-# the global io flusher
-__flusher = IOFlusher()
-
-def runIoFlusher()->bool:
-    """ make global io flusher running, call only once in '__main__' """
-    global __flusher
-    if __flusher.is_alive():
-        return False
-    __flusher.start()
-    return True
 
 class Timer(object):
     """ a simple timer for debug using """

@@ -1,8 +1,9 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # note   : python3.4+
-import sys, os, threading, sched, time, re
+import sys, os, time, re
 from time import localtime
+from pathlib import Path
 from platform import platform
 from magic3.utils import debug
 
@@ -10,13 +11,17 @@ def userDir():
     ''' return current user's dir with os.sep '''
     return os.path.expanduser('~') + os.sep
 
-def curDir(fn):
+def homeDir():
+    ''' return home dir of current user with os.sep '''
+    return str(Path.home()) + os.sep
+
+def curDir():
     ''' return current dir of fn '''
-    return os.path.dirname(os.path.realpath(fn))
+    return str(Path(os.path.curdir).absolute())
 
 def parentDir(fn):
     ''' return parent directory '''
-    return os.path.dirname(os.path.dirname(os.path.realpath(fn)))
+    return str(Path(fn).parent.absolute()) + os.sep
 
 def cmaFileTime(fn):
     ''' get file time : ctime, mtime, atime '''
@@ -24,6 +29,17 @@ def cmaFileTime(fn):
     fstat = os.lstat(fn)
     ct, mt, at = fstat.st_ctime, fstat.st_mtime, fstat.st_atime
     return (localtime(ct), localtime(mt), localtime(at))
+
+def spanWildcard(path:str, wildcard:str)->list:
+    ''' span the wildcard in path '''
+    print(os.path.realpath(path))
+    return [str(p) for p in Path(os.path.realpath(path)).glob(wildcard)]
+    
+def spanWildcardRecurse(path:str, wildcard:str)->list:
+    ''' span the wildcard in path recursive '''
+    print(os.path.realpath(path))
+    return [str(p) for p in Path(os.path.realpath(path)).rglob(wildcard)]
+
 
 class PathSpliter(object):
     ''' split standard path stirng '''
@@ -41,6 +57,7 @@ class PathSpliter(object):
     
     @property
     def basename(self)->str:
+        ''' get basename of the filename '''
         return os.path.basename(self._fname)
     
     def updir(self, n=1)->str:
@@ -64,40 +81,30 @@ class PathSpliter(object):
         return os.sep.join(self._parts[:-n])
 
 
-class PathWalker(threading.Thread):
+class PathWalker(object):
     ''' walking in path and call user's function with file names in path '''
-    def __init__(self, path, callback, delay = 0, times = 1):
-        threading.Thread.__init__(self)
-        assert path and callback and delay >= 0 and times >= 1
+    def __init__(self, path, predicate):
+        assert path and predicate
         if not os.path.exists(path):
-            raise ValueError('PathWalker : no such dir : ' + path)
+            raise ValueError('No such dir : ' + path)
         self._path = path
-        self._delay = delay
-        self._times = times
-        self._callback = callback
-        self.daemon = True 
+        self._pred = predicate
 
     def walk(self):
-        ''' walking impl '''
-        exceptions = []
-        for root, dirs, filenames in os.walk(self._path):
-            try:
-                if root[-1] != os.sep:
-                    root += os.sep
-                for fn in filenames:
-                    self._callback(root + fn)
-                for d in dirs:
-                    self._callback(root + d)
-            except Exception as e:
-                exceptions.append(e)
-        return exceptions
-
-    def run(self):
-        ''' thread start '''
-        sc = sched.scheduler(time.time, time.sleep)
-        for i in range(self._times):
-            sc.enter(self._delay * (i+1), 1, self.walk)
-        sc.run()
+        ''' walking the path recursive '''
+        result = []
+        for root, dirs, names in os.walk(self._path):
+            if root[-1] != os.sep:
+                root += os.sep
+            for f in names:
+                if self._pred(root + f):
+                    result.append(root + f)
+            for d in dirs:
+                if d[-1] != os.sep:
+                    d += os.sep
+                if self._pred(root + d):
+                    result.append(root + d)
+        return result
 
 def isValidDir(*args) ->bool:
     ''' check is valid dir '''
@@ -111,21 +118,14 @@ def isValidDir(*args) ->bool:
         return d.startswith('/')
     return True
 
-def listDir(path, usercb=lambda x:True, timeout=10)->list:
-    ''' get all file names in `path` '''
-    filenames = []
-    def _callback(fn):
-        if usercb(fn):
-            filenames.append(fn)
-    pw = PathWalker(path, _callback, 0, 1)
-    pw.start()
-    pw.join(timeout)
-    return filenames
+def listDir(path, pred=lambda x:True)->list:
+    ''' get all file names in `path` recursive '''
+    return PathWalker(path, pred).walk()
 
 def listMatched(path, sre):
-    ''' list all filenames in `path` which matched `sre` '''
+    ''' list all filenames in `path` which matched `sre` recursive '''
     x = re.compile(sre)
-    return list(fn for fn in listDir(path) if x.match(fn))
+    return [fn for fn in listDir(path) if x.match(fn)]
 
 def scanDir(path):
     ''' like listDir, but without recursive!!! '''
@@ -134,8 +134,11 @@ def scanDir(path):
     else:
         return os.listdir(path)
 
+
 def test(path):
     print('user dir:', userDir())
+    print('cwd dir:', curDir())
+    print('parent dir:', parentDir(curDir()))
     print('test PathWalker:')
     ps = PathSpliter('/home/user/temp/domains.txt')
     print(str(ps))
@@ -154,14 +157,14 @@ def test(path):
     print(m.tm_year, m.tm_mon, m.tm_mday)
     print(a.tm_year, a.tm_mon, a.tm_mday)
     print('\ntest listDir with lambda:')
-    cb = lambda fn : print(fn, time.ctime(os.path.getctime(fn)))
-    pw = PathWalker(os.getcwd(), cb, 2.0, 1)
-    pw.start()
-    pw.join(3)
+    cb = lambda fn : fn.endswith('.py')
+    fs = listDir(curDir(), cb)
+    print(fs)
     print('\ntest scanDir:')
     print(scanDir(path))
 
 
 if __name__ == '__main__':
     test(userDir() + 'tmp')
+
 
