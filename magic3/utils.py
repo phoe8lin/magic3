@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-## author : cypro666
-## note   : python3.4+
+# author : cypro666
+# note   : python3.4+
 import os, sys, traceback, socket
 import json, re, functools
 from threading import Thread 

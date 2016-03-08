@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-## author : cypro666
-## note   : python3.4+
+# author : cypro666
+# note   : python3.4+
 import logging, os, sys
 import traceback, inspect
 from threading import Lock

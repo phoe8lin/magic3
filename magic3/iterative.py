@@ -1,16 +1,11 @@
 # -*- coding:utf-8 -*-
-## author : cypro666
-## note   : python3.4+
+# author : cypro666
+# note   : python3.4+
 import random
 from _operator import mul as _mul, itemgetter as _itemgetter
 from _collections import deque
-from itertools import \
-(islice,count,chain,starmap,repeat,cycle,filterfalse,groupby,tee,combinations,zip_longest)
+from itertools import islice, count, chain, starmap, repeat, cycle, filterfalse, groupby, tee, combinations, zip_longest
 
-
-def tabulate(function, start=0):
-    """ return function(0), function(1), ... """
-    return map(function, count(start))
 
 def tail(n, iterable):
     " return an iterator over the last n items: tail(3, 'ABCDEFG') --> E F G "
@@ -54,7 +49,7 @@ def partition(pred, iterable):
 def powerset(iterable):
     " powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3) "
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+    return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
 
 def iterExcept(func, exception, first=None):
     """ call a function repeatedly until an exception is raised. Converts 
@@ -69,7 +64,7 @@ def iterExcept(func, exception, first=None):
     """
     try:
         if first is not None:
-            yield first()   # For database APIs needing an initial cast to db.first()
+            yield first()  # For database APIs needing an initial cast to db.first()
         while 1:
             yield func()
     except exception:
@@ -138,11 +133,11 @@ def untilFail(fun, exception, iterable, *args):
         pass
     return n
 
-def nth(iterable, n, default = None):
+def nth(iterable, n, default=None):
     """ get the n-th element from iterable """
     return next(islice(iterable, n, None), default)
 
-def quantify(iterable, pred = bool):
+def quantify(iterable, pred=bool):
     """ sum of pred(iterable) """
     return sum(map(pred, iterable))
 
@@ -160,7 +155,7 @@ def pairwise(iterable):
     next(b, None)
     return zip(a, b)
 
-def grouper(iterable, n, fillvalue = None):
+def grouper(iterable, n, fillvalue=None):
     """ put elements in n groups, aligned with fillvalue """
     args = [iter(iterable)] * n
     return zip_longest(fillvalue=fillvalue, *args)
@@ -193,14 +188,22 @@ class TestIteralgos(unittest.TestCase):
         self.q = [0, 2, 4, 6, 8]
         self.a = [1, 2, 3, 4, 5]
         self.s = ['aa', 'bb', 'cc', 'dd', 'ee']
+    
     def tearDown(self):
         pass
     
+    def test_padNone(self):
+        r = padNone([1, 2, 3])
+        self.assertEqual(next(r), 1)
+        self.assertEqual(next(r), 2)
+        self.assertEqual(next(r), 3)
+        self.assertEqual(next(r), None)
+    
     def test_tail(self):
-        self.assertEqual(list(tail(4, 'ABCDEFGHIJK')), ['H','I','J','K'])
+        self.assertEqual(list(tail(4, 'ABCDEFGHIJK')), ['H', 'I', 'J', 'K'])
         
     def test_powerset(self):
-        self.assertEqual(list(powerset([1,2,3])), [(),(1,),(2,),(3,),(1,2),(1,3),(2,3),(1,2,3)])
+        self.assertEqual(list(powerset([1, 2, 3])), [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)])
     
     def test_dotProduct(self):
         self.assertEqual(dotProduct(self.p, self.q), 140)
@@ -209,6 +212,11 @@ class TestIteralgos(unittest.TestCase):
         i = iter(self.a)
         advance(i, 3)
         self.assertEqual(next(i), 4)
+    
+    def test_partition(self):
+        i0, i1 = partition(lambda x: x & 1, range(10))
+        self.assertEqual(list(i0), [0, 2, 4, 6, 8])
+        self.assertEqual(list(i1), [1, 3, 5, 7, 9])
     
     def test_ntake(self):
         self.assertEqual(['aa', 'bb'], list(ntake(self.s, 0, 2)))
@@ -228,11 +236,11 @@ class TestIteralgos(unittest.TestCase):
     
     def test_chainCycles(self):
         a = (3, 2, 1)
-        self.assertEqual(list(chainCycles(a, 2)), [3,2,1,3,2,1])
+        self.assertEqual(list(chainCycles(a, 2)), [3, 2, 1, 3, 2, 1])
     
     def test_flatten(self):
-        ll = [{1,2}, [3,4], (5,6)]
-        self.assertEqual(list(flatten(ll)), [1,2,3,4,5,6])
+        ll = [{1, 2}, [3, 4], (5, 6)]
+        self.assertEqual(list(flatten(ll)), [1, 2, 3, 4, 5, 6])
     
     def test_repeatCall(self):
         n = 0
@@ -242,7 +250,7 @@ class TestIteralgos(unittest.TestCase):
         self.assertEqual(n, 3)
     
     def test_pairwise(self):
-        self.assertEqual(list(pairwise(range(6))), [(0,1), (1,2), (2,3), (3,4), (4,5)])
+        self.assertEqual(list(pairwise(range(6))), [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)])
     
     def test_grouper(self):
         self.assertEqual(list(grouper(self.p, 2, None)), [(1, 3), (5, 7), (9, None)])
@@ -252,14 +260,35 @@ class TestIteralgos(unittest.TestCase):
         self.assertEqual(list(roundRobin(self.s, self.q, self.p)), a)
     
     def test_everSeen(self):
-        self.assertEqual(list(everSeen("AAABCCDDDDEFABC")), ['A','B','C','D','E','F'])
+        self.assertEqual(list(everSeen("AAABCCDDDDEFABC")), ['A', 'B', 'C', 'D', 'E', 'F'])
     
     def test_justSeen(self):
         self.assertEqual(list(justSeen("AAABBCCDDDDEFABC")),
                          ['A', 'B', 'C', 'D', 'E', 'F', 'A', 'B', 'C'])
+    
+    def test_firstTrue(self):
+        self.assertEqual(firstTrue([{}, 0, None, False, 'bingo', 1, 2, 3, 0], False), 'bingo')
+    
     def test_randomSelect(self):
         self.assertEqual(len(randomSelect(self.a, 3)), 3)
     
+    def test_randomProduct(self):
+        m, n = randomProduct(self.p, self.q)
+        self.assertIn(m, self.p)
+        self.assertIn(n, self.q)
+        
+    def test_randomPermutation(self):
+        r = randomPermutation(self.p)
+        for i in r:
+            self.assertIn(i, r)
+        self.assertEqual(len(r), len(self.p))
+
+    def test_randomCombinationWithReplacement(self):
+        r = randomCombinationWithReplacement(self.s, 4)
+        for i in r:
+            self.assertIn(i, r)
+        self.assertEqual(len(r), 4)
+
 
 if __name__ == '__main__':
     unittest.main()

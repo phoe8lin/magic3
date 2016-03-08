@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-## author : cypro666
-## date   : 2014.12.22
+# author : cypro666
+# date   : 2014.12.22
 """ run `python3 setup.py install` to install this module """
 
 from distutils.core import setup

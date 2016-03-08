@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-## author : cypro666
-## date   : 2015.06.06
+# author : cypro666
+# date   : 2015.06.06
 import re, time
 import threading
 try:    

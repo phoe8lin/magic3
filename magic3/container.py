@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-## author : cypro666
-## note   : python3.4+
+# author : cypro666
+# note   : python3.4+
 import sys
 import random
 import array 

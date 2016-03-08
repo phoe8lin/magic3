@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-## author : cypro666
-## date   : 2015.06.06
+# author : cypro666
+# date   : 2015.06.06
 import os
 import re
-from abc import abstractmethod, ABCMeta
 from _io import open, DEFAULT_BUFFER_SIZE
+from abc import abstractmethod, ABCMeta
+from magic3.utils import isotime
 from magic3.filesystem import userDir,listDir
 
 bestIOBufferSize = DEFAULT_BUFFER_SIZE << 1
@@ -44,9 +45,11 @@ class LineParserBase(metaclass=ABCMeta):
             for line in open(fn, mode, buffering=bufsize, encoding=encoding, errors=errors):
                 self.parseLine(line.rstrip())
     
-    def readAll(self, mode='rb'):
-        for fn in self._files:
-            self.read(fn, mode)
+    def readAll(self, mode='rb', encoding='utf-8-sig'):
+        for each in self._files:
+            if __debug__:
+                print(isotime(), each)
+            self.read(each, mode, encoding)
     
     @abstractmethod
     def parseLine(self, line):

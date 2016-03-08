@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-## author : cypro666
-## note   : python3.4+
+# author : cypro666
+# note   : python3.4+
 import re
 from builtins import compile as _compile
 from mako.template import Template  # TODO: how about jinja2?

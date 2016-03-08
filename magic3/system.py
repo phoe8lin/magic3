@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-## author : cypro666
-## note   : python3.4+
+# author : cypro666
+# note   : python3.4+
 """ this module only works on unix/linux systems!!! """
 from subprocess import Popen, PIPE, getstatusoutput
 
