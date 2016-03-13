@@ -7,7 +7,7 @@ from urllib.parse import quote
 import pymongo
 from pymongo import MongoClient, ReadPreference
 from bson.code import Code
-from magic3.utils import timeMeter, printException, loadJson
+from magic3.utils import time_meter, print_error, load_json
 
 # default mongodb host and port
 DefaultAddress = ('localhost', 27017)
@@ -45,7 +45,7 @@ class OpMongo(object):
         if self._mc:
             self._mc.close()
     
-    def listCollections(self):
+    def list_collections(self):
         """ return collection names current """
         assert self._db
         return deepcopy(self._db.collection_names())
@@ -85,7 +85,7 @@ class OpMongo(object):
         objects_id = self._collection.insert(docs, fsync)
         return objects_id
     
-    def insertNoException(self, docs, fsync = False)->object:
+    def insert_no_exception(self, docs, fsync = False)->object:
         """ insert doc, if fsync is True, will be very very slow! """
         try:
             objects_id = self._collection.insert(docs, fsync)
@@ -97,13 +97,13 @@ class OpMongo(object):
         """ count of current collection """
         return self._collection.count()
     
-    def createIndexes(self, indexlist, unique=False)->list:
+    def create_indexes(self, indexlist, unique=False)->list:
         """ create indexes(means not only one) on current collection if enable """ 
         if not isinstance(indexlist, (list, tuple, set)):
             raise TypeError('indexlist shoule be list/tuple/set')
         return [self._collection.create_index(i, unique=unique) for i in indexlist]
     
-    def findOne(self, query)->'cursor':
+    def find_one(self, query)->'cursor':
         """ query and return only one doc if found """
         cursor = self._collection.find_one(query)
         return cursor
@@ -121,7 +121,7 @@ class OpMongo(object):
             cursor.sort(sortkey, pymongo.DESCENDING if reverse else pymongo.ASCENDING)
         return cursor
     
-    def findFields(self, query, fields:list):
+    def find_fields(self, query, fields:list):
         """ find doc specified by `query`, if `sortkey`, sort result """
         cursor = self._collection.find(query, fields)
         return cursor
@@ -130,12 +130,12 @@ class OpMongo(object):
         return self._collection.distinct(key)
 
 
-@timeMeter(__name__)
+@time_meter(__name__)
 def test():
     ''' Simple tester for opmongo '''
     cfg = {'host':DefaultHost, 'port':DefaultPort, 'username':'root', 'password':'', 'dbname':'test'}
     db = OpMongo(**cfg)
-    colls = db.listCollections()
+    colls = db.list_collections()
     print(colls)
     db.choose(colls[0])
     print(list(db.find({}, explain=True)))

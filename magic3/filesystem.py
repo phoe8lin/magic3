@@ -7,35 +7,35 @@ from pathlib import Path
 from platform import platform
 from magic3.utils import debug
 
-def userDir():
+def user_dir():
     ''' return current user's dir with os.sep '''
     return os.path.expanduser('~') + os.sep
 
-def homeDir():
+def home_dir():
     ''' return home dir of current user with os.sep '''
     return str(Path.home()) + os.sep
 
-def curDir():
+def cur_dir():
     ''' return current dir of fn '''
     return str(Path(os.path.curdir).absolute())
 
-def parentDir(fn):
+def parent_dir(fn):
     ''' return parent directory '''
     return str(Path(fn).parent.absolute()) + os.sep
 
-def cmaFileTime(fn):
+def cma_file_time(fn):
     ''' get file time : ctime, mtime, atime '''
     assert os.path.exists(fn)
     fstat = os.lstat(fn)
     ct, mt, at = fstat.st_ctime, fstat.st_mtime, fstat.st_atime
     return (localtime(ct), localtime(mt), localtime(at))
 
-def spanWildcard(path:str, wildcard:str)->list:
+def span_wildcard(path:str, wildcard:str)->list:
     ''' span the wildcard in path '''
     print(os.path.realpath(path))
     return [str(p) for p in Path(os.path.realpath(path)).glob(wildcard)]
     
-def spanWildcardRecurse(path:str, wildcard:str)->list:
+def span_wildcard_recurse(path:str, wildcard:str)->list:
     ''' span the wildcard in path recursive '''
     print(os.path.realpath(path))
     return [str(p) for p in Path(os.path.realpath(path)).rglob(wildcard)]
@@ -106,7 +106,7 @@ class PathWalker(object):
                     result.append(root + d)
         return result
 
-def isValidDir(*args) ->bool:
+def is_valid_dir(*args) ->bool:
     ''' check is valid dir '''
     for d in args:
         assert isinstance(d, str)
@@ -118,17 +118,17 @@ def isValidDir(*args) ->bool:
         return d.startswith('/')
     return True
 
-def listDir(path, pred=lambda x:True)->list:
+def list_dir(path, pred=lambda x:True)->list:
     ''' get all file names in `path` recursive '''
     return PathWalker(path, pred).walk()
 
-def listMatched(path, sre):
+def list_matched(path, sre):
     ''' list all filenames in `path` which matched `sre` recursive '''
     x = re.compile(sre)
-    return [fn for fn in listDir(path) if x.match(fn)]
+    return [fn for fn in list_dir(path) if x.match(fn)]
 
-def scanDir(path):
-    ''' like listDir, but without recursive!!! '''
+def scan_dir(path):
+    ''' like list_dir, but without recursive!!! '''
     if sys.version_info.minor >= 5:
         return tuple(os.scandir(path))
     else:
@@ -136,9 +136,9 @@ def scanDir(path):
 
 
 def test(path):
-    print('user dir:', userDir())
-    print('cwd dir:', curDir())
-    print('parent dir:', parentDir(curDir()))
+    print('user dir:', user_dir())
+    print('cwd dir:', cur_dir())
+    print('parent dir:', parent_dir(cur_dir()))
     print('test PathWalker:')
     ps = PathSpliter('/home/user/temp/domains.txt')
     print(str(ps))
@@ -152,19 +152,19 @@ def test(path):
     print(ps[2])
     print(ps[3])
     print('\ntest file time stat:')
-    c, m ,a = cmaFileTime(path)
+    c, m ,a = cma_file_time(path)
     print(c.tm_year, c.tm_mon, c.tm_mday)
     print(m.tm_year, m.tm_mon, m.tm_mday)
     print(a.tm_year, a.tm_mon, a.tm_mday)
-    print('\ntest listDir with lambda:')
+    print('\ntest list_dir with lambda:')
     cb = lambda fn : fn.endswith('.py')
-    fs = listDir(curDir(), cb)
+    fs = list_dir(cur_dir(), cb)
     print(fs)
-    print('\ntest scanDir:')
-    print(scanDir(path))
+    print('\ntest scan_dir:')
+    print(scan_dir(path))
 
 
 if __name__ == '__main__':
-    test(userDir() + 'tmp')
+    test(user_dir() + 'tmp')
 
 

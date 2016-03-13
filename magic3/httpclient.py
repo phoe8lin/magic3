@@ -12,7 +12,7 @@ try:
     from tornado.curl_httpclient import CurlAsyncHTTPClient as AsyncHTTPClient
 except: 
     from tornado.httpclient import AsyncHTTPClient as AsyncHTTPClient
-from magic3.utils import timeMeter
+from magic3.utils import time_meter
 
 
 class Delay(object):
@@ -113,15 +113,15 @@ class AsyncHttpClient(object):
 
 class AsyncHttpClientPool(threading.Thread):
     """ pool of clients  """
-    def __init__(self, numConcurrency, callback):
+    def __init__(self, num_concurrency, callback):
         """ num_concurrency should Not be too large, 4~8 are suitable values """
         threading.Thread.__init__(self)
-        self._nworker = numConcurrency
+        self._nworker = num_concurrency
         self._callback = callback
         self._queue = queues.Queue()
         self._fetched = 0
-        self._stopEvent = threading.Event()
-        self._stopEvent.clear()
+        self._stop_event = threading.Event()
+        self._stop_event.clear()
 
     @property
     def fetched(self):
@@ -133,11 +133,11 @@ class AsyncHttpClientPool(threading.Thread):
     
     @gen.coroutine
     def stop(self):
-        self._stopEvent.set()
+        self._stop_event.set()
         self._etime = time.time() - self._etime
 
     @gen.coroutine
-    def _callbackWrapper(self, client):
+    def __callback_wrapped(self, client):
         return self._callback(client)
 
     @gen.coroutine
@@ -150,7 +150,7 @@ class AsyncHttpClientPool(threading.Thread):
             current = yield self._queue.get()
             try:
                 yield current.fetch()
-                yield self._callbackWrapper(current)
+                yield self.__callback_wrapped(current)
             finally:
                 self._fetched += 1
                 self._queue.task_done()
@@ -166,14 +166,14 @@ class AsyncHttpClientPool(threading.Thread):
         """ call start method to run this thread """
         self._etime = time.time()
         while True:
-            if self._stopEvent.is_set():
+            if self._stop_event.is_set():
                 return
             io_loop = ioloop.IOLoop.current()
             io_loop.run_sync(self)
             Delay.wait(0.1)
 
 
-@timeMeter(__file__)
+@time_meter(__file__)
 def test():
     d = DecodeCache()
     c = AsyncHttpClient("http://www.baidu.com/")
@@ -209,7 +209,7 @@ def test():
 
 if __name__ == '__main__':
     """ """
-    from magic3.utils import runIoFlusher
-    runIoFlusher()
+    from magic3.system import run_io_flusher
+    run_io_flusher()
     test()
 

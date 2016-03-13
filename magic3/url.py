@@ -16,49 +16,49 @@ class URLMacher:
     compiled = re.compile(pattern, re.S)
     compiled2 = re.compile(pattern2, re.S)
 
-def extractURLFromText(text:'str or bytes')->frozenset:
+def extract_url_from_text(text:'str or bytes')->frozenset:
     """ extract all url unduplicate in text """
     if isinstance(text, str):
         return set(i.group(0) for i in list(URLMacher.compiled.finditer(text)))
     elif isinstance(text, bytes):
         return set(i.group(0) for i in list(URLMacher.compiled2.finditer(text)))
-    raise ValueError('extractURLFromText')
+    raise ValueError('extract_url_from_text')
 
-def addHttpPrefix(uri):
+def add_http(uri):
     """ add 'http://' prefix to url """
     return uri if uri[:7] == 'http://' else 'http://' + uri
 
-def addHttpPrefix2(uri):
+def add_http2(uri):
     """ add 'http://' prefix to url """
     return uri if uri[:7] == b'http://' else b'http://' + uri
 
-def subHttpPrefix(uri):
+def trim_http(uri):
     """ strip 'http://' prefix to url """
     return uri if uri[:7] != 'http://' else uri[7:]
 
-def subHttpPrefix2(uri):
+def trim_http2(uri):
     """ strip 'http://' prefix to url """
     return uri if uri[:7] != b'http://' else uri[7:]
 
-def urlPath(url:str)->str:
+def url_path(url:str)->str:
     """ get url's path(strip params) """
     return url.split('?', 1)[0]
 
-def urlPath2(url:bytes)->bytes:
+def url_path2(url:bytes)->bytes:
     """ get url's path(strip params) """
     return url.split(b'?', 1)[0]
 
-def urlHost(url:str)->str:
+def url_host(url:str)->str:
     """ get url's host(domain name) """
-    return subHttpPrefix(url).split('/', 1)[0]
+    return trim_http(url).split('/', 1)[0]
 
-def urlHost2(url:bytes)->bytes:
+def url_host2(url:bytes)->bytes:
     """ get url's host(domain name) """
-    return subHttpPrefix2(url).split(b'/', 1)[0]
+    return trim_http2(url).split(b'/', 1)[0]
 
-def urlSplit(url:str)->(str,str,str):
+def url_split(url:str)->(str,str,str):
     """ split `url` to 3 part: raw url, url without params, url domain """
-    url = subHttpPrefix(url)
+    url = trim_http(url)
     seps = url.split('?', 1)
     host = seps[0].split('/', 1)[0]
     if len(seps) > 1:
@@ -66,9 +66,9 @@ def urlSplit(url:str)->(str,str,str):
     else:
         return host, seps[0], ''
 
-def urlSplit2(url:bytes)->(bytes,bytes,bytes):
+def url_split2(url:bytes)->(bytes,bytes,bytes):
     """ split `url` to 3 part: raw url, url without params, url domain """
-    url = subHttpPrefix2(url)
+    url = trim_http2(url)
     seps = url.split(b'?', 1)
     host = seps[0].split(b'/', 1)[0]
     if len(seps) > 1:
@@ -103,7 +103,7 @@ class URLString(str):
         self.solver = Resolver()
     
     @classmethod
-    def configDNSSolver(cls, solver_type='tornado.netutil.BlockingResolver'):
+    def config_solver(cls, solver_type='tornado.netutil.BlockingResolver'):
         Resolver.configure(solver_type)
 
     @property
@@ -132,18 +132,18 @@ class URLString(str):
 
 
 def test(url):
-    assert(b'www.baidu.com' == urlHost2(url))
-    assert(b'http://www.baidu.com/s' == urlPath2(url))
-    h, p, q = urlSplit2(url)
+    assert(b'www.baidu.com' == url_host2(url))
+    assert(b'http://www.baidu.com/s' == url_path2(url))
+    h, p, q = url_split2(url)
     assert(b'ie=utf-8&wd=123' == q)
     text = """<html>
     <p>URL</p><p>URL</p><p>URL</p>
     </html>""".replace('URL', url.decode('utf-8'))
-    for url in extractURLFromText(text):
+    for url in extract_url_from_text(text):
         print(url)
         s = URLString(url)
         print(s.resolved[0], s.scheme)
-
+    print('OK')
 
 if __name__ == '__main__':
     test(b'http://www.baidu.com/s?ie=utf-8&wd=123')

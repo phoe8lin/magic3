@@ -11,10 +11,10 @@ except ImportError:
 from magic3.utils import debug
 
 # default http request timeout in seconds
-requestTimeout = 30
+request_timeout = 30
 
 # max number threads for CurlCrawler
-maxThreads = 256
+max_threads = 256
 
 # regex for checking a URL is valid or not 
 xValidURL = re.compile("^https?://\\w+[^\\s]*$(?ai)")
@@ -22,7 +22,7 @@ xValidURL = re.compile("^https?://\\w+[^\\s]*$(?ai)")
 # default cookie filename 
 cookieFileName = os.path.expanduser('~') + os.sep + 'cookie.tmp.txt'
 
-def setCookieFilename(fname:str):
+def set_cookie_filename(fname:str):
     """ ensure fn is a correct filename with full path """
     global cookieFileName
     cookieFileName = fname
@@ -37,7 +37,7 @@ userAgents = (
 )
 
 # default http header for curl
-curlHeader = [
+curl_header = [
     'User-Agent: ' + userAgents[randint(0, len(userAgents)-1)],
     'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0',
     'Accept-Language: zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3',
@@ -46,7 +46,7 @@ curlHeader = [
 ]
 
 # default http header for requests
-requestsHeader = {k:v for k,v in (s.split(': ') for s in curlHeader)}
+request_header = {k:v for k,v in (s.split(': ') for s in curl_header)}
 
 class Response(object):
     """ as the result type of all fetchers below """
@@ -74,28 +74,28 @@ class CurlFetcher(object):
     """ fetch urls using pycurl, a wrapper of Curl object """
     def __init__(self):
         """ `url` should be a string match standard URL """
-        self._responseHeader = bytearray()
+        self._response_header = bytearray()
         self._curl = pycurl.Curl()
-        self._curl.setopt(pycurl.HEADERFUNCTION, self._curlHeaderFunction)
+        self._curl.setopt(pycurl.HEADERFUNCTION, self._curl_header_function)
         if usingCurlShare:
             self._curl.setopt(pycurl.SHARE, globalCURLShare)
         self.setopt()
 
-    def _curlHeaderFunction(self, buf):
+    def _curl_header_function(self, buf):
         """ append new http head lines """
-        self._responseHeader += buf
+        self._response_header += buf
         return len(buf)
     
-    def setopt(self, header = curlHeader, maxRedirect = 9, followLocation = 1, forbidReuse = 1, connectTimeout = requestTimeout):
+    def setopt(self, header = curl_header, max_redirect = 9, follow_location = 1, forbid_reuse = 1, connect_timeout = request_timeout):
         """ set options for CURL, do Not change default options if not sure the meaning """
         setopt = self._curl.setopt
         setopt(pycurl.VERBOSE, 0)
         setopt(pycurl.HTTPHEADER, header)
-        setopt(pycurl.FOLLOWLOCATION, followLocation)
-        setopt(pycurl.MAXREDIRS, maxRedirect)
-        setopt(pycurl.FORBID_REUSE, forbidReuse)
-        setopt(pycurl.CONNECTTIMEOUT, requestTimeout)
-        setopt(pycurl.TIMEOUT, requestTimeout * 2)
+        setopt(pycurl.FOLLOWLOCATION, follow_location)
+        setopt(pycurl.MAXREDIRS, max_redirect)
+        setopt(pycurl.FORBID_REUSE, forbid_reuse)
+        setopt(pycurl.CONNECTTIMEOUT, request_timeout)
+        setopt(pycurl.TIMEOUT, request_timeout * 2)
         setopt(pycurl.NOSIGNAL, 1) 
         setopt(pycurl.DNS_CACHE_TIMEOUT, 3600) 
         setopt(pycurl.ENCODING, 'gzip')        
@@ -107,7 +107,7 @@ class CurlFetcher(object):
         """ fetch url using 'GET' method """
         if not xValidURL.match(url):
             raise ValueError('CurlFetcher: {u} is not correct'.format(u=url))
-        self._responseHeader.clear()
+        self._response_header.clear()
         try:
             bio = io.BytesIO()
             self._curl.setopt(pycurl.HTTPGET, 1)
@@ -121,9 +121,9 @@ class CurlFetcher(object):
             debug('{e}: {u}'.format(e=str(e), u=url))
             return None
         if callback:
-            return callback(Response(url, bytes(self._responseHeader), bio.getvalue()))
+            return callback(Response(url, bytes(self._response_header), bio.getvalue()))
         else:
-            return Response(url, bytes(self._responseHeader), bio.getvalue())
+            return Response(url, bytes(self._response_header), bio.getvalue())
     
     def close(self):
         """ release resource """
@@ -136,20 +136,20 @@ class CrawlerTimeoutError(RuntimeError):
 
 class CurlCrawler(threading.Thread):
     """ crawler based on multithreads and pycurl """
-    def __init__(self, urls:list, maxThreads:int, callback):
-        """ `maxThreads` should not be too large, less than 50 is always enough
+    def __init__(self, urls:list, max_threads:int, callback):
+        """ `max_threads` should not be too large, less than 50 is always enough
             `callback` is a user function with Response as the unique argument  """
         assert isinstance(urls, (list, tuple, set))
-        assert maxThreads >= 1
-        self._init(urls, maxThreads, callback)
+        assert max_threads >= 1
+        self._init(urls, max_threads, callback)
 
-    def _init(self, urls, maxThreads, callback):
+    def _init(self, urls, max_threads, callback):
         self._results = []
         self._callback = callback
-        if maxThreads > maxThreads:
-            maxThreads = maxThreads
+        if max_threads > max_threads:
+            max_threads = max_threads
         self._fetchers = [
-            threading.Thread(target=self._dispatch, args=(CurlFetcher(),)) for i in range(maxThreads)
+            threading.Thread(target=self._dispatch, args=(CurlFetcher(),)) for i in range(max_threads)
         ]
         self._queue = queue.Queue(len(urls) + len(self._fetchers))
         for url in urls:
@@ -235,13 +235,13 @@ class AsyncioCrawler(object):
         return self._results
 
     @asyncio.coroutine
-    def _wrappedCallback(self, r):
+    def _wrapped_callback(self, r):
         """ user's callback may be not a coroutine, so wrap it! """
         return self._callback(r)
 
     @asyncio.coroutine
     def _fetch(self, url):
-        return requests.get(url=url, headers=requestsHeader, timeout=requestTimeout)
+        return requests.get(url=url, headers=request_header, timeout=request_timeout)
 
     @asyncio.coroutine
     def _dispatch(self, url):
@@ -252,7 +252,7 @@ class AsyncioCrawler(object):
             r = yield from self._fetch(url)
             r.headers['status'] = '{0} {1}'.format(r.status_code, r.reason)
             if self._callback:
-                ret = yield from self._wrappedCallback(Response(url, r.headers, r.content))
+                ret = yield from self._wrapped_callback(Response(url, r.headers, r.content))
             else:
                 ret = Response(url, r.headers, r.content)
             r.close()

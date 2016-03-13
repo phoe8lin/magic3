@@ -20,17 +20,17 @@ class FillerBase(object):
         pass
 
 class ETA(BarBase):
-    def formatTime(self, seconds):
+    def format_time(self, seconds):
         return time.strftime('%H:%M:%S', time.gmtime(seconds))
     def update(self, pbar):
         if pbar.curValue == 0:
             return 'Time:  --:--:--'
         elif pbar.finished:
-            return 'Time: %s' % self.formatTime(pbar.secondsElapsed)
+            return 'Time: %s' % self.format_time(pbar.secondsElapsed)
         else:
             elapsed = pbar.secondsElapsed
             eta = elapsed * pbar.maxValue / pbar.curValue - elapsed
-            return 'Time: %s' % self.formatTime(eta)
+            return 'Time: %s' % self.format_time(eta)
 
 class Percentage(BarBase):
     def update(self, pbar):
@@ -42,7 +42,7 @@ class BarFiller(FillerBase):
         self.marker = marker
         self.left = left
         self.right = right
-    def _formatMarker(self, pbar):
+    def _format_maker(self, pbar):
         if isinstance(self.marker, str):
             return self.marker
         else:
@@ -51,7 +51,7 @@ class BarFiller(FillerBase):
         percent = pbar.percentage()
         cwidth = (width - len(self.left) - len(self.right))*2
         markedWidth = int(percent * cwidth / 100)
-        m = self._formatMarker(pbar)
+        m = self._format_maker(pbar)
         bar = (self.left + (m*markedWidth).ljust(int(cwidth)) + self.right)
         return bar
 
@@ -67,8 +67,8 @@ class ProgressBar(object):
         self.signalSet = False
         if termWidth is None:
             try:
-                self.handleResize(None,None)
-                signal.signal(signal.SIGWINCH, self.handleResize)
+                self.handle_resize(None,None)
+                signal.signal(signal.SIGWINCH, self.handle_resize)
                 self.signalSet = True
             except:
                 self.termWidth = 80
@@ -80,14 +80,14 @@ class ProgressBar(object):
         self.startTime = None
         self.secondsElapsed = 0
 
-    def handleResize(self, signum, frame):
+    def handle_resize(self, signum, frame):
         h,w=array('h', ioctl(self.fd,termios.TIOCGWINSZ,'\0'*8))[:2]
         self.termWidth = w
 
     def percentage(self):
         return self.curValue*100.0 / self.maxValue
 
-    def _formatWidgets(self):
+    def _format_widgets(self):
         r = []
         hfill_inds = []
         num_hfill = 0
@@ -108,26 +108,26 @@ class ProgressBar(object):
             r[iw] = r[iw].update(self, (self.termWidth-currwidth)/num_hfill)
         return r
 
-    def _formatLine(self):
-        return ''.join(self._formatWidgets()).ljust(self.termWidth)
+    def _format_line(self):
+        return ''.join(self._format_widgets()).ljust(self.termWidth)
 
-    def _needUpdate(self):
+    def _need_update(self):
         return int(self.percentage()) != int(self.prevPercentage)
 
     def update(self, value):
         assert 0 <= value <= self.maxValue
         self.curValue = value
-        if not self._needUpdate() or self.finished:
+        if not self._need_update() or self.finished:
             return
         if not self.startTime:
             self.startTime = time.time()
         self.secondsElapsed = time.time() - self.startTime
         self.prevPercentage = self.percentage()
         if value != self.maxValue:
-            self.fd.write(self._formatLine() + '\r')
+            self.fd.write(self._format_line() + '\r')
         else:
             self.finished = True
-            self.fd.write(self._formatLine() + '\n')
+            self.fd.write(self._format_line() + '\n')
 
     def start(self):
         self.update(0)

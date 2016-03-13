@@ -46,11 +46,11 @@ class Logger(object):
         """ check logfile exists or not """
         return os.path.exists(self.__logfile);
     
-    def fileName(self)->str:
+    def filename(self)->str:
         """ return real path of logfile """
         return os.path.realpath(self.__logfile)
     
-    def fileSize(self)->int:
+    def filesize(self)->int:
         """ return size in byte of logfile """
         return os.path.getsize(self.__logfile)
 
@@ -104,11 +104,11 @@ class Logger(object):
     def critical(self, *messages):
         self.__call__(*messages, level='critical', tb=self.__caller(1))
     
-    def currentLines(self)->int:
+    def current_lines(self)->int:
         """ get number lines in current log file """ 
         return self.__nlines
     
-    def currentLevels(self)->dict:
+    def current_levels(self)->dict:
         """ get number levels in current log file """ 
         return self.__nlevel.copy()
 
@@ -123,7 +123,7 @@ def test():
     id2 = id(log)
     assert id1 == id2
     log.check()
-    print('log file : %s' % log.fileName())
+    print('log file : %s' % log.filename())
     log('log test start...')
     log.debug('this is debug: %s' % __name__)
     log('this is info', level='info')
@@ -137,9 +137,9 @@ def test():
     test_inner(log, 'more lines:\nsome line1\nsome line2\nsome line3')
     log.record({'the first':'info', 'the second':'info'})
     log('log test finish...')
-    print('lines:', log.currentLines())
-    print('levels:', log.currentLevels())
-    print('log file size : %d' % log.fileSize())
+    print('lines:', log.current_lines())
+    print('levels:', log.current_levels())
+    print('log file size : %d' % log.filesize())
 
 
 if __name__ == '__main__':

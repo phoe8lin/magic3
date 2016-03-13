@@ -32,19 +32,19 @@ class BiMap(object):
         self._vk.clear()
         self._vk = {}
     
-    def iterKeyValue(self):
+    def iter_key_value(self):
         return iter(self._kv.items())
     
-    def iterValueKey(self):
+    def iter_value_key(self):
         return iter(self._vk.items())
     
     def zip(self):
         return zip(self._kv, self._vk)
     
-    def hasKey(self, key):
+    def has_key(self, key):
         return key in self._kv
     
-    def hasValue(self, val):
+    def has_value(self, val):
         return val in self._vk
     
     def __contains__(self, obj):
@@ -54,10 +54,10 @@ class BiMap(object):
             return True
         return False
     
-    def getValue(self, key):
+    def get_value(self, key):
         return self._kv[key]
     
-    def getKey(self, val):
+    def get_key(self, val):
         return self._vk[val]
     
     def __getitem__(self, obj):
@@ -77,7 +77,7 @@ class BiMap(object):
     def update(self, key, val):
         self.__setitem__(key, val)
         
-    def fromIter(self, iterable, clear=True):
+    def from_iter(self, iterable, clear=True):
         if clear:
             self.clear()
         for k, v in iterable:
@@ -90,10 +90,10 @@ class BisectList(list):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     
-    def makeSet(self)->set:
+    def make_set(self)->set:
         return set(self)
     
-    def makeDict(self, aggregate = False)->dict:
+    def make_dict(self, aggregate = False)->dict:
         if not aggregate:
             return dict(enumerate(self))
         grouper = {}
@@ -103,7 +103,7 @@ class BisectList(list):
             grouper[val].append(index)
         return grouper
     
-    def binarySearch(self, x)->int:
+    def binary_search(self, x)->int:
         lo = 0
         hi = self.__len__()
         while lo < hi:
@@ -152,7 +152,7 @@ class CounterType(defaultdict):
         for k in sorted(self, key=lambda x:self[x], reverse=reverse):
             yield (k, self[k])
     
-    def sortedFormated(self, formats='%d, %s', reverse=True)->str:
+    def sorted_formated(self, formats='%d, %s', reverse=True)->str:
         for k, v in self.sorted(reverse):
             yield formats % (v, k)
     
@@ -174,9 +174,9 @@ class TestIteralgos(unittest.TestCase):
     def test_BiMap(self):
         d = [('name1', 'Mike'), ('name2', 'Jerry'), ('tag', 2.4), ('base', (1,2,3))]
         bt = BiMap()
-        bt.fromIter(d)
-        self.assertEqual(bt.getValue('name1'), 'Mike')
-        self.assertEqual(bt.getKey(2.4), 'tag')
+        bt.from_iter(d)
+        self.assertEqual(bt.get_value('name1'), 'Mike')
+        self.assertEqual(bt.get_key(2.4), 'tag')
         bt['name3'] = 'Ops'
         self.assertEqual(bt['name3'], 'Ops')
         bt.update('bingo', 'Cherry')
@@ -185,8 +185,8 @@ class TestIteralgos(unittest.TestCase):
             bt.update('tag', 'bingo')
         except ValueError:
             pass
-        self.assertIsNotNone(bt.hasKey('base'))
-        self.assertIsNotNone(bt.hasValue((1,2,3)))
+        self.assertIsNotNone(bt.has_key('base'))
+        self.assertIsNotNone(bt.has_value((1,2,3)))
         self.assertTrue('name1' in bt)
         self.assertTrue('name4' not in bt)
     
@@ -196,7 +196,7 @@ class TestIteralgos(unittest.TestCase):
             sl.append(random.randint(1,100000))
         sl.sort()
         for i in range(100000, 200000):
-            assert sl.binarySearch(i) == -1
+            assert sl.binary_search(i) == -1
         for i in range(10000):
             sl.insort(i)
             sl.insort(i, right=True)
@@ -204,10 +204,10 @@ class TestIteralgos(unittest.TestCase):
         sl.sort()
         for i in range(100000):
             self.assertEqual(tmp[i], sl[i])
-        s = sl.makeSet()
-        d = sl.makeDict(False)
+        s = sl.make_set()
+        d = sl.make_dict(False)
         self.assertTrue(len(s) <= len(d))
-        d = sl.makeDict(True)
+        d = sl.make_dict(True)
         self.assertTrue(len(s) == len(d))
         self.assertTrue(len(d) <= len(sl))
 

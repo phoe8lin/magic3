@@ -8,9 +8,9 @@ except Exception:
     raise ImportError('warning: numpy can Not be loaded!\n')
 
 
-def readCSV(name:str, delim=',', 
-            withhead=False, strip=True, convert=None, 
-            encoding='utf-8-sig', errors='strict')->([],[]):
+def read_csv(name:str, delim=',', 
+             withhead=False, strip=True, convert=None, 
+             encoding='utf-8-sig', errors='strict')->([],[]):
     """ read csv file, return head and body as list """
     if convert and strip:
         make = lambda s: convert(s.strip(b'" ').decode(encoding, errors))
@@ -32,35 +32,35 @@ def readCSV(name:str, delim=',',
     return head, body
 
 
-def writeCSV(name:str, delim:str, body:list, head:list, 
-             bodyFormat=None, headFormat=None)->int:
+def write_csv(name:str, delim:str, body:list, head:list, 
+              body_format=None, head_format=None)->int:
     """ write data to csv file, note body should be a bivariate table """
-    if not headFormat:
-        headFormat = (delim).join(['%s']*len(head)) + '\n'
-    elif not headFormat.endswith('\n'):
-        headFormat += '\n'
-    if not bodyFormat:
+    if not head_format:
+        head_format = (delim).join(['%s']*len(head)) + '\n'
+    elif not head_format.endswith('\n'):
+        head_format += '\n'
+    if not body_format:
         try:
-            bodyFormat = delim.join(['%s']*len(body[0])) + '\n'
+            body_format = delim.join(['%s']*len(body[0])) + '\n'
         except TypeError:
             try:
-                bodyFormat = delim.join(['%s']*numpy.shape(body)[1]) + '\n'
+                body_format = delim.join(['%s']*numpy.shape(body)[1]) + '\n'
             except IndexError:
-                bodyFormat = delim.join(['%s']*numpy.shape(body)[0]) + '\n'
-    elif not bodyFormat.endswith('\n'):
-        bodyFormat += '\n'
+                body_format = delim.join(['%s']*numpy.shape(body)[0]) + '\n'
+    elif not body_format.endswith('\n'):
+        body_format += '\n'
     with open(name, 'w', encoding='utf-8-sig') as fout:
         nlines = 0
         if head:
             nlines += 1
-            fout.write(headFormat % tuple(head))
+            fout.write(head_format % tuple(head))
         if len(numpy.shape(body)) == 1:
             for i in body:
                 fout.write('%s\n' % i)
                 nlines += 1
         else:
             for row in body:
-                fout.write(bodyFormat % tuple(row))
+                fout.write(body_format % tuple(row))
                 nlines += 1
     return nlines
 
@@ -130,7 +130,7 @@ class BivTable(BivTableBase):
 
     def read(self, name, delim=',', withhead=False, strip=False, convert=None, encoding='utf-8-sig'):
         """ read from file, `convert` should be a function like int/str/float/lambda """
-        self.head, self.body = readCSV(name, delim, withhead, strip, convert, encoding)
+        self.head, self.body = read_csv(name, delim, withhead, strip, convert, encoding)
         self.check(self.head, self.body)
 
     def check(self, head, body):
@@ -140,9 +140,9 @@ class BivTable(BivTableBase):
         if not isinstance(body, (list, tuple, set, numpy.matrix, numpy.ndarray)):
             raise TypeError
 
-    def write(self, name, delim=',', bodyFormat=None, headFormat=None):
+    def write(self, name, delim=',', body_format=None, head_format=None):
         """ write data to csv file """
-        return writeCSV(name, delim, self.body, self.head, bodyFormat, headFormat)
+        return write_csv(name, delim, self.body, self.head, body_format, head_format)
     
     @property
     def shape(self)->tuple:
@@ -179,7 +179,7 @@ def indexed(vec, start, offset=1)->dict:
     end = len(vec) * 2 + start
     return {k:v for k,v in zip(vec, range(start, end, offset))}
 
-def indexedByColumn(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
+def indexed_by_column(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
     """[['a', 'b', 'c'],      [[1.  2.  3.]
         ['e', 'a', 'd'],  =>   [3.  1.  2.]
         ['f', 'f', 'b'],       [2.  2.  1.]
@@ -194,7 +194,7 @@ def indexedByColumn(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
             mat[i, j] = dtmp[j][row[j]] if row[j] != NAFlag else NA
     return mat
 
-def indexedByRow(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
+def indexed_by_row(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
     """[['a', 'b', 'b'],      [[1.  2.  2.]
         ['e', 'a', 'd'],  =>   [2.  1.  3.]
         ['f', 'f', 'b'],       [3.  4.  1.]
@@ -209,7 +209,7 @@ def indexedByRow(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
             mat[i, j] = dtmp[i][row[j]] if row[j] != NAFlag else NA
     return mat
 
-def indexedAll(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
+def indexed_all(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
     d = {}
     n = start
     for row in table:
@@ -251,18 +251,18 @@ def test():
         print(csv.matrix())
     except:
         pass
-    csv.write('csv.csv', delim=',', bodyFormat=','.join(['%.2f']*10))
+    csv.write('csv.csv', delim=',', body_format=','.join(['%.2f']*10))
     m = numpy.array([['a','b','c'],
                      ['b','c','d'],
                      ['d','e','f'],
                      ['a','f','c'],
                      ['g','d','e']])
     print()
-    print(indexedByRow(m))
+    print(indexed_by_row(m))
     print()
-    print(indexedByColumn(m))
+    print(indexed_by_column(m))
     print()
-    print(indexedAll(m))
+    print(indexed_all(m))
     print()
 
 

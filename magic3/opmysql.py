@@ -45,7 +45,7 @@ class OpMysql(object):
             self._cur.close()
             self._con.close()
     
-    def switchDatabase(self, dbname):
+    def switch_database(self, dbname):
         """ change database """
         with self._lock:
             self._con.select_db(dbname)
@@ -58,7 +58,7 @@ class OpMysql(object):
             self._con.commit()  
             cur.close()          
             
-    def executeNoCommit(self, sql, args = None):
+    def execute_no_commit(self, sql, args = None):
         """ execute SQL on selected database without commit """
         with self._lock:
             self._cur.execute(sql, args = args)
@@ -93,7 +93,7 @@ class OpMysql(object):
 def test():
     mydb = OpMysql(username='root', password=getpass(),
                   host='localhost', port='3306', database='mysql')
-    mydb.switchDatabase('mysql')
+    mydb.switch_database('mysql')
     
     debug(mydb.query("""SELECT * FROM `user` LIMIT %d;""" % (10,), True))
 

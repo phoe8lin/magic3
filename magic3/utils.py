@@ -7,9 +7,9 @@ from base64 import b64encode, b64decode
 from ipaddress import ip_address
 from time import time, strftime, sleep
 
-def isValidIP(ip)->bool:
+def is_valid_ip(ip)->bool:
     """ Returns true if the given string is a well-formed IP address(v4/v6) """
-    def _fromStr(_ip):
+    def from_str(_ip):
         if not _ip or '\x00' in _ip:
             return False
         try:
@@ -17,18 +17,18 @@ def isValidIP(ip)->bool:
             return bool(res)
         except Exception:
             return False
-    def _fromInt(_ip):
+    def from_int(_ip):
         try: 
             ip_address(_ip)
             return True
         except ValueError:
             return False
     if isinstance(ip, str): 
-        return _fromStr(ip)
+        return from_str(ip)
     elif isinstance(ip, int):  
-        return _fromInt(ip)
+        return from_int(ip)
     else: 
-        raise TypeError('isValidIP')
+        raise TypeError('is_valid_ip')
 
 class IPv4Macher:
     pattern = "^\
@@ -39,7 +39,7 @@ class IPv4Macher:
     compiled = re.compile(pattern)
     compiled2 = re.compile(pattern.encode(encoding='utf-8'))
 
-def toBytes(obj:object)->bytes:
+def to_bytes(obj:object)->bytes:
     """ make object to bytes if supports, using `ascii` as defualt encode """
     if isinstance(obj, str):
         try:
@@ -50,7 +50,7 @@ def toBytes(obj:object)->bytes:
         return obj
     return memoryview(obj).tobytes()
 
-def recursiveEncode(s:str, level:int=10)->str:
+def recursive_encode(s:str, level:int=10)->str:
     """ recursive encode `s` using base64,
         `level` is depth of recursive, the max value is 32 """
     assert level <= 32
@@ -58,28 +58,28 @@ def recursiveEncode(s:str, level:int=10)->str:
         return str(s, 'utf-8')
     if not isinstance(s, (bytearray,bytes)):
         s = bytes(s, 'utf-8')
-    return recursiveEncode(b64encode(s), level-1)
+    return recursive_encode(b64encode(s), level-1)
 
-def recursiveDecode(s:str, level:int=10)->str:
-    """ recursive decode `s`(encoded by `recursiveEncode`) using base64,
+def recursive_decode(s:str, level:int=10)->str:
+    """ recursive decode `s`(encoded by `recursive_encode`) using base64,
         `level` is depth of recursive, the max value is 32 """
     assert level <= 32
     if level <= 0:
         return str(s, 'utf-8')
     if not isinstance(s, (bytearray,bytes)):
         s = bytes(s, 'utf-8')
-    return recursiveDecode(b64decode(s), level-1)
+    return recursive_decode(b64decode(s), level-1)
 
 def utf8(s, errors='replace')->str:
     """ transform s to 'utf-8' coding """ 
     return str(s, 'utf-8', errors=errors)
 
-def loadJson(name, objHook=None)->dict:
+def load_json(name, objHook=None)->dict:
     """ load json from file return dict """
     with open(name, encoding='utf-8', errors='replace') as f:
         return json.loads(f.read(), encoding='utf-8', object_hook=objHook)
 
-def dumpJson(obj:dict, name=None)->str:
+def dump_json(obj:dict, name=None)->str:
     """ dump json(dict) to file """
     str = json.dumps(obj, indent=4, ensure_ascii=False)
     if name:
@@ -115,18 +115,18 @@ def isotime():
     """ return iso datetime, like 2014-03-28 19:45:59 """ 
     return strftime('%Y-%m-%d %H:%M:%S')
 
-def isTimePoint(timeIn24hFormat):
+def is_time_point(time_in_24h):
     """ check now is specify time """
-    return strftime('%H:%M:%S') == timeIn24hFormat
+    return strftime('%H:%M:%S') == time_in_24h
 
-def waitUntil(timeIn24hFormat):
+def wait_until(time_in_24h):
     """ return until now is hour:minute:second """
     while True:
-        if strftime('%H:%M:%S') == timeIn24hFormat:
+        if strftime('%H:%M:%S') == time_in_24h:
             break
         sleep(0.5)
 
-def timeMeter(src=os.path.basename(__file__)):
+def time_meter(src=os.path.basename(__file__)):
     """ print time when enter wrapped function and leave wrapped function """
     def _wrapper(func):
         @functools.wraps(func)
@@ -138,7 +138,7 @@ def timeMeter(src=os.path.basename(__file__)):
         return _call
     return _wrapper
 
-def printException(name, output=sys.stderr):
+def print_error(name, output=sys.stderr):
     """ print exception with extra info(name) and limit traceback in 2 """
     assert name
     assert output is sys.stderr or output is sys.stdout
@@ -182,24 +182,24 @@ def singleton(cls, *args, **kw):
 
 
 def test():
-    assert(isValidIP('127.0.0.1'))
-    assert(isValidIP('4.4.4.4'))
-    assert(isValidIP('192.168.255.0'))
-    assert(isValidIP('::1'))
-    assert(isValidIP('2620:0:1cfe:face:b00c::3'))
-    assert(not isValidIP('www.google.com'))
-    assert(not isValidIP('localhost'))
-    assert(not isValidIP('[4.4.4.4]'))
-    assert(not isValidIP('127.0.0.1.2.3'))
-    assert(not isValidIP('123123123123'))
-    assert(not isValidIP('\x00\x01\x02\x03'))
-    assert(not isValidIP('123.123.321.456'))
-    assert(not isValidIP(''))
-    assert(isTimePoint(isotime().split()[1]))
+    assert(is_valid_ip('127.0.0.1'))
+    assert(is_valid_ip('4.4.4.4'))
+    assert(is_valid_ip('192.168.255.0'))
+    assert(is_valid_ip('::1'))
+    assert(is_valid_ip('2620:0:1cfe:face:b00c::3'))
+    assert(not is_valid_ip('www.google.com'))
+    assert(not is_valid_ip('localhost'))
+    assert(not is_valid_ip('[4.4.4.4]'))
+    assert(not is_valid_ip('127.0.0.1.2.3'))
+    assert(not is_valid_ip('123123123123'))
+    assert(not is_valid_ip('\x00\x01\x02\x03'))
+    assert(not is_valid_ip('123.123.321.456'))
+    assert(not is_valid_ip(''))
+    assert(is_time_point(isotime().split()[1]))
     t = isotime().split()[1]
     sleep(1)
-    assert(not isTimePoint(t))
-    print(dumpJson({t:'go', 'key':PythonVersion}))
+    assert(not is_time_point(t))
+    print(dump_json({t:'go', 'key':PythonVersion}))
 
 if __name__ == '__main__':
     test()
