@@ -51,7 +51,8 @@ def to_bytes(obj:object)->bytes:
         return obj
     return memoryview(obj).tobytes()
 
-def MD5(buf:bytes):
+def MD5(buf:bytes)->str:
+    """ get md5 hexdigest of bytes """
     return openssl_md5(buf).hexdigest()
 
 def recursive_encode(s:str, level:int=10)->str:
