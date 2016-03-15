@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # date   : 2015.06.06
+import _io
 try:
     import numpy
 except Exception:
@@ -23,7 +24,7 @@ def read_csv(name:str, delim=',',
     head, body = [], []
     delim = delim.encode()
     if isinstance(name, str):
-        name = open(name, 'rb')
+        name = _io.open(name, 'rb')
     if withhead:
         line = next(name).rstrip()
         head = [i.decode() for i in line.rstrip(b',').split(delim)]
@@ -49,7 +50,7 @@ def write_csv(name:str, delim:str, body:list, head:list,
                 body_format = delim.join(['%s']*numpy.shape(body)[0]) + '\n'
     elif not body_format.endswith('\n'):
         body_format += '\n'
-    with open(name, 'w', encoding='utf-8-sig') as fout:
+    with _io.open(name, 'w', encoding='utf-8-sig') as fout:
         nlines = 0
         if head:
             nlines += 1
@@ -234,7 +235,7 @@ def quantize(arr, mapper, unique=True)->dict:
 
 
 def test():
-    from io import BytesIO
+    from _io import BytesIO
     s = b"""a,b,c,d,e,f,g,h,j,k 
             1,2,3,4,5,6,7,8,9,0 
             0,9,8,7,6,5,4,3,2,1 

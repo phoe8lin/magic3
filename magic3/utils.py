@@ -2,7 +2,8 @@
 # author : cypro666
 # note   : python3.4+
 import os, sys, traceback, socket
-import json, re, functools
+import _io, json, re, functools
+from _hashlib import openssl_md5
 from base64 import b64encode, b64decode
 from ipaddress import ip_address
 from time import time, strftime, sleep
@@ -50,6 +51,9 @@ def to_bytes(obj:object)->bytes:
         return obj
     return memoryview(obj).tobytes()
 
+def MD5(buf:bytes):
+    return openssl_md5(buf).hexdigest()
+
 def recursive_encode(s:str, level:int=10)->str:
     """ recursive encode `s` using base64,
         `level` is depth of recursive, the max value is 32 """
@@ -76,14 +80,14 @@ def utf8(s, errors='replace')->str:
 
 def load_json(name, objHook=None)->dict:
     """ load json from file return dict """
-    with open(name, encoding='utf-8', errors='replace') as f:
+    with _io.open(name, encoding='utf-8', errors='replace') as f:
         return json.loads(f.read(), encoding='utf-8', object_hook=objHook)
 
 def dump_json(obj:dict, name=None)->str:
     """ dump json(dict) to file """
     str = json.dumps(obj, indent=4, ensure_ascii=False)
     if name:
-        with open(name, 'w') as f:
+        with _io.open(name, 'w') as f:
             f.write(str)
     return str
 
@@ -199,7 +203,12 @@ def test():
     t = isotime().split()[1]
     sleep(1)
     assert(not is_time_point(t))
-    print(dump_json({t:'go', 'key':PythonVersion}))
+    j = dump_json({t:'go', 'key':PythonVersion})
+    d = json.loads(j)
+    assert(t in d and 3 in d['key']) 
+    assert(MD5(b'abcdef0987654321') == 'eaa1c1d22e330b10903dfdbfed5e6ff9')
+    print('test OK')
+
 
 if __name__ == '__main__':
     test()

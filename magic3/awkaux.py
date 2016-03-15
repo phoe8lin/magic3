@@ -2,13 +2,12 @@
 # author : cypro666
 # date   : 2016-03-08
 from os.path import exists
-from io import BufferedReader
 from string import Template
 from magic3.system import OSCommand
 
 AWK_CMD = Template("""awk -F "$delim" '{print $vargs}' $files 2>&1""")
 
-def open_awk(filelist:list, pos_args:list, delim)->BufferedReader:
+def open_awk(filelist:list, pos_args:list, delim):
     """ call awk command and return an opened pipe for read the output of awk, eg:
         for line in open_awk([file1, file2], [2,3,4], ',').stdout:
             print(line)   

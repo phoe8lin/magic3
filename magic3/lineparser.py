@@ -10,7 +10,7 @@ from magic3.utils import isotime
 from magic3.filesystem import user_dir,list_dir
 from magic3.awkaux import read_from_awk
 
-bestIOBufferSize = DEFAULT_BUFFER_SIZE << 1
+bestIOBufferSize = DEFAULT_BUFFER_SIZE << 2
 
 class LineParserBase(metaclass=ABCMeta):
     """ inherit this class and implement `run` and `parse_line` method """
@@ -39,13 +39,13 @@ class LineParserBase(metaclass=ABCMeta):
 
     def read(self, fn, mode='rb', encoding='utf-8-sig', errors='replace'):
         bufsize = bestIOBufferSize
-        doParse = self.parse_line
+        parser_ = self.parse_line
         if 'b' in mode:
             for line in open(fn, mode, buffering=bufsize):
-                doParse(line.rstrip())
+                parser_(line.rstrip())
         else:
             for line in open(fn, mode, buffering=bufsize, encoding=encoding, errors=errors):
-                doParse(line.rstrip())
+                parser_(line.rstrip())
     
     def read_all(self, mode='rb', encoding='utf-8-sig'):
         for each in self._files:
@@ -72,9 +72,9 @@ class AWKLineParserBase(LineParserBase):
 
     def read(self, fn):
         delimb = bytes(self._delim, 'utf-8')
-        doParse = self.parse_line
+        parser_ = self.parse_line
         for line in read_from_awk([fn], self._fields, self._delim):
-            doParse(line.rstrip().split(delimb))
+            parser_(line.rstrip().split(delimb))
 
     @abstractmethod
     def parse_line(self, seps:list):
