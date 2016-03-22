@@ -94,7 +94,9 @@ def dump_json(obj:dict, name=None)->str:
 
 def debug(*args, **kwargs):
     """ print to stderr not stdout """
-    print(strftime('%Y-%m-%d %H:%M:%S'), *args, file=sys.stderr, flush=True, **kwargs)
+    ts = time()
+    dt = strftime('%F %T') + ('.%03d' % ((ts - int(ts)) * 1000))
+    print(dt, *args, file=sys.stderr, flush=True, **kwargs)
 
 class IncreamentID(int):
     """ auto increament id """
@@ -118,7 +120,7 @@ class DummyLock(object):
 
 def isotime():
     """ return iso datetime, like 2014-03-28 19:45:59 """ 
-    return strftime('%Y-%m-%d %H:%M:%S')
+    return strftime('%F %T')
 
 def is_time_point(time_in_24h):
     """ check now is specify time """

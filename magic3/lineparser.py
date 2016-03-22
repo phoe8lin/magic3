@@ -6,7 +6,7 @@ import os
 import re
 from _io import open, DEFAULT_BUFFER_SIZE
 from abc import abstractmethod, ABCMeta
-from magic3.utils import isotime
+from magic3.utils import debug
 from magic3.filesystem import user_dir,list_dir
 from magic3.awkaux import read_from_awk
 
@@ -50,7 +50,7 @@ class LineParserBase(metaclass=ABCMeta):
     def read_all(self, mode='rb', encoding='utf-8-sig'):
         for each in self._files:
             if __debug__:
-                print(isotime(), each)
+                debug(each)
             self.read(each, mode, encoding)
     
     @abstractmethod
@@ -83,7 +83,7 @@ class AWKLineParserBase(LineParserBase):
     def read_all(self):
         for each in self._files:
             if __debug__:
-                print(isotime(), each)
+                debug(each)
             self.read(each)
 
     def run(self, fields:list, delim:str=' '):

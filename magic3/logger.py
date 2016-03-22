@@ -25,12 +25,12 @@ class Logger(object):
         self.__lock = Lock()
         self.mode = 'a' if append else 'w'
         self.level = logging.NOTSET
-        self.datefmt = '%Y-%m-%d %H:%M:%S'
-        self.msgfmt = '%(asctime)s [%(levelname)s] %(message)s'
+        self.dtfmt = '%Y-%m-%d %H:%M:%S'
+        self.msgfmt = '%(asctime)s.%(msecs)d [%(levelname)s] %(message)s'
         logging.basicConfig(filename=logfile,
                             filemode=self.mode,
                             level=self.level,
-                            datefmt=self.datefmt,
+                            datefmt=self.dtfmt,
                             format=self.msgfmt)
         self.__log = { 'debug'    : logging.debug,
                        'info'     : logging.info,
