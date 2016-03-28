@@ -110,8 +110,9 @@ class IncreamentID(int):
     def __init__(self, init=0): self = 0
     def __str__(self):  return str(self)
 
-class DummyLock(object):
+class DummyLock:
     """ dummy lock for non-multithread """
+    __slots__ = ()
     def __init__(self): pass
     def __enter__(self): pass
     def __exit__(self, exctype, excinst, exctb): pass
