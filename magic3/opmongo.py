@@ -7,7 +7,6 @@ from urllib.parse import quote
 import pymongo
 from pymongo import MongoClient, ReadPreference
 from bson.code import Code
-from magic3.utils import time_meter, print_error, load_json
 
 # default mongodb host and port
 DefaultAddress = ('localhost', 27017)
@@ -130,7 +129,6 @@ class OpMongo(object):
         return self._collection.distinct(key)
 
 
-@time_meter(__name__)
 def test():
     ''' Simple tester for opmongo '''
     cfg = {'host':DefaultHost, 'port':DefaultPort, 'username':'root', 'password':'', 'dbname':'test'}
@@ -143,4 +141,5 @@ def test():
 
 if __name__ == '__main__':
     test()
+
 
