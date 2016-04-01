@@ -19,8 +19,8 @@ class OpMongo(object):
         {
             "host"     : "192.168.1.33",
             "port"     : 27017,
-            "username" : "root"
-            "password" : "bingo321"
+            "username" : "root",
+            "password" : "bingo321",
             "dbname"   : "spider"
         } 
         """

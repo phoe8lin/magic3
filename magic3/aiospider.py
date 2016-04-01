@@ -2,24 +2,23 @@
 # author : cypro666
 # note   : python3.4+
 import io, re, os
-import asyncio, threading, queue
-from random import randint
+import asyncio
 try:
     import aiohttp
 except ImportError:
     raise ImportError('magic3.crawler depends on aiohttp library')
-from magic3.utils import debug
+from magic3.utils import *
 
 # regex for checking a URL is valid or not 
 validURL = re.compile("^https?://\\w+[^\\s]*$(?ai)")
 
 # default http header for curl
 httpHeader = {
-    'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0',
-    'Accept' : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0',
+    'User-Agent'      : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0',
+    'Accept'          : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0',
     'Accept-Language' : 'zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3',
     'Accept-Encoding' : 'gzip, deflate',
-    'Connection' : 'keep-alive'
+    'Connection'      : 'keep-alive'
 }
 
 class CharsetCache(object):
@@ -71,59 +70,109 @@ class Response(object):
         return (len(self.header), len(self.content))
 
 
-async def fetch_with_session(session, callback, url, **options):
-    """ default options:
-        params = None
-        data = None 
-        allow_redirects = True
-        max_redirects = 5
-    """
-    if not validURL.match(url):
-        raise ValueError(url)
-    if not options:
-        options['allow_redirects'] = True
-        options['max_redirects'] = 5
-    with aiohttp.Timeout(10):
-        async with session.get(url, headers=httpHeader, **options) as r:
-            content = await r.content.read()
-            callback(Response(url, dict(r.headers), content))
+if PythonVersion >= (3, 5):
+    async def fetch_with_session(session, callback, url, **options):
+        """ default options:
+            params = None
+            data = None 
+            allow_redirects = True
+            max_redirects = 5
+        """
+        if not validURL.match(url):
+            raise ValueError(url)
+        if not options:
+            options['allow_redirects'] = True
+            options['max_redirects'] = 5
+        with aiohttp.Timeout(10):
+            async with session.get(url, headers=httpHeader, **options) as r:
+                content = await r.content.read()
+        return callback(Response(url, dict(r.headers), content))
+    
+    async def fetch(callback, url, **options):
+        """ default options:
+            params = None
+            data = None 
+            allow_redirects = True
+            max_redirects = 5
+        """
+        with aiohttp.ClientSession() as session:
+            await fetch_with_session(session, callback, url, **options)
+    
+    async def fetch_multi_with_session(session, callback, urls:list, **options):
+        """ fetch more than one url by specific session """
+        fetchers = [ fetch_with_session(session, callback, url, **options) for url in urls ]
+        await asyncio.tasks.wait(fetchers)
+    
+    async def fetch_multi(callback, urls:list, **options):
+        """ fetch more than one url, see fetch above """
+        fetchers = [ fetch(callback, url, **options) for url in urls ]
+        await asyncio.tasks.wait(fetchers)
 
-async def fetch(callback, url, **options):
-    """ default options:
-        params = None
-        data = None 
-        allow_redirects = True
-        max_redirects = 5
-    """
-    with aiohttp.ClientSession() as session:
-        await fetch_with_session(session, callback, url, **options)
+else:   # PythonVersion < (3, 5):
+    @asyncio.coroutine
+    def fetch_with_session(session, callback, url, **options):
+        """ default options:
+            params = None
+            data = None 
+            allow_redirects = True
+            max_redirects = 5
+        """
+        if not validURL.match(url):
+            raise ValueError(url)
+        if not options:
+            options['allow_redirects'] = True
+            options['max_redirects'] = 5
+        with aiohttp.Timeout(10):
+            r = yield from session.get(url, headers=httpHeader, **options)
+            try:
+                content = yield from r.content.read()
+            finally:
+                r.close()
+        return callback(Response(url, dict(r.headers), content))
+    
+    @asyncio.coroutine
+    def fetch(callback, url, **options):
+        """ default options:
+            params = None
+            data = None 
+            allow_redirects = True
+            max_redirects = 5
+        """
+        with aiohttp.ClientSession() as session:
+            yield from fetch_with_session(session, callback, url, **options)
+    
+    @asyncio.coroutine
+    def fetch_multi_with_session(session, callback, urls:list, **options):
+        """ fetch more than one url by specific session """
+        fetchers = [ fetch_with_session(session, callback, url, **options) for url in urls ]
+        yield from asyncio.tasks.wait(fetchers)
+    
+    @asyncio.coroutine
+    def fetch_multi(callback, urls:list, **options):
+        """ fetch more than one url, see fetch above """
+        fetchers = [ fetch(callback, url, **options) for url in urls ]
+        yield from asyncio.tasks.wait(fetchers)
 
 
-async def fetch_multi_with_session(session, callback, urls:list, **options):
-    fetchers = [ fetch_with_session(session, callback, url, **options) for url in urls ]
-    await asyncio.tasks.wait(fetchers)
+def test_fetch():
+    aio_run(
+        fetch(lambda r : print(r.url, len(r.content)), 'https://www.taobao.com'),
+        fetch(lambda r : print(r.url, len(r.content)), 'http://www.csdn.net'),
+        fetch(lambda r : print(r.url, len(r.content)), 'http://git.oschina.net')
+    )
 
-
-async def fetch_multi(callback, urls:list, **options):
-    fetchers = [ fetch(callback, url, **options) for url in urls ]
-    await asyncio.tasks.wait(fetchers)
-
-
-def test():
-    def callback(r):
-        cc = CharsetCache()
-        print(re.search("<title>.+?</title>(?ai)", cc.decode(r.url, r.content)).group())
-    urls = ['https://www.baidu.com', 'http://www.sina.com.cn', 'http://www.163.com']
-    asyncio.get_event_loop().run_until_complete(fetch_multi(callback, urls))
-
+def test_dcache():
+    cc = CharsetCache()
+    callback = lambda r : print(re.search("<title>.+?</title>(?ai)", cc.decode(r.url, r.content)).group())
+    urls = ['https://www.baidu.com', 
+            'http://www.sina.com.cn', 
+            'http://www.163.com']
+    aio_run(fetch_multi(callback, urls))
+    print(cc._cache)
+    
 
 if __name__ == '__main__':
-    test()
-
-
-
-
-
-
+    test_fetch()
+    test_dcache()
 
 

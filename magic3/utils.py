@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # note   : python3.4+
+import asyncio
 import os, sys, traceback, socket
 import _io, json, re, functools
 from _hashlib import openssl_md5
@@ -98,17 +99,6 @@ def debug(*args, **kwargs):
     dt = strftime('%F %T') + ('.%03d' % ((ts - int(ts)) * 1000))
     print(dt, *args, file=sys.stderr, flush=True, **kwargs)
 
-class IncreamentID(int):
-    """ auto increament id """
-    @staticmethod
-    def create(init=0):
-        return iter(IncreamentID(init))
-    def __iter__(self):
-        while True: 
-            yield self 
-            self += 1
-    def __init__(self, init=0): self = 0
-    def __str__(self):  return str(self)
 
 class DummyLock:
     """ dummy lock for non-multithread """
@@ -187,6 +177,28 @@ def singleton(cls, *args, **kw):
             instances[cls] = cls(*args, **kw)
         return instances[cls]
     return _object
+
+def aio_loop():
+    """ get event loop """
+    return asyncio.get_event_loop()
+
+def aio_tasks(*future):
+    """ wrap more futures as one waitable future """
+    assert isinstance(future, (list, tuple))
+    return asyncio.tasks.wait(future);
+
+def aio_run(*future, loop=None):
+    """ run until complete """
+    if not loop:
+        loop = aio_loop()
+    if len(future) > 1:
+        return loop.run_until_complete(aio_tasks(*future))
+    else:
+        return loop.run_until_complete(future[0])
+
+def aio_to_future(coro, loop=None):
+    """ make coroutine to asyncio.Future """
+    return asyncio.ensure_future(coro, loop=loop)
 
 
 def test():
