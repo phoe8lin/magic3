@@ -96,17 +96,17 @@ if PythonVersion >= (3, 5):
             max_redirects = 5
         """
         with aiohttp.ClientSession() as session:
-            await fetch_with_session(session, callback, url, **options)
+            return await fetch_with_session(session, callback, url, **options)
     
     async def fetch_multi_with_session(session, callback, urls:list, **options):
         """ fetch more than one url by specific session """
         fetchers = [ fetch_with_session(session, callback, url, **options) for url in urls ]
-        await asyncio.tasks.wait(fetchers)
+        return await asyncio.tasks.wait(fetchers)
     
     async def fetch_multi(callback, urls:list, **options):
         """ fetch more than one url, see fetch above """
         fetchers = [ fetch(callback, url, **options) for url in urls ]
-        await asyncio.tasks.wait(fetchers)
+        return await asyncio.tasks.wait(fetchers)
 
 else:   # PythonVersion < (3, 5):
     @asyncio.coroutine
@@ -139,19 +139,22 @@ else:   # PythonVersion < (3, 5):
             max_redirects = 5
         """
         with aiohttp.ClientSession() as session:
-            yield from fetch_with_session(session, callback, url, **options)
+            ret = yield from fetch_with_session(session, callback, url, **options)
+            return ret
     
     @asyncio.coroutine
     def fetch_multi_with_session(session, callback, urls:list, **options):
         """ fetch more than one url by specific session """
         fetchers = [ fetch_with_session(session, callback, url, **options) for url in urls ]
-        yield from asyncio.tasks.wait(fetchers)
+        ret = yield from asyncio.tasks.wait(fetchers)
+        return ret
     
     @asyncio.coroutine
     def fetch_multi(callback, urls:list, **options):
         """ fetch more than one url, see fetch above """
         fetchers = [ fetch(callback, url, **options) for url in urls ]
-        yield from asyncio.tasks.wait(fetchers)
+        ret = yield from asyncio.tasks.wait(fetchers)
+        return ret
 
 
 def test_fetch():
