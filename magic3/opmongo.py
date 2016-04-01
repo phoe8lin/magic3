@@ -1,31 +1,30 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # note   : python3.4+
-import sys
+import sys, threading
 from copy import deepcopy
 from urllib.parse import quote
-import pymongo
-from pymongo import MongoClient, ReadPreference
-from bson.code import Code
+import pymongo, bson
 
 # default mongodb host and port
 DefaultAddress = ('localhost', 27017)
 DefaultHost, DefaultPort = DefaultAddress
 MongoErrors = pymongo.errors.PyMongoError
 
-""" OpMongo's constructor kwargs like:
-{
-    "host"     : "192.168.1.33",
-    "port"     : 27017,
-    "username" : "root"
-    "password" : "bingo321"
-    "dbname"   : "spider"
-} """
 
 class OpMongo(object):
     """ wrapper of mongodb operations """
     def __init__(self, **kwargs):
-        super(OpMongo, self).__init__()
+        """ kwargs is a dict or json like:
+        {
+            "host"     : "192.168.1.33",
+            "port"     : 27017,
+            "username" : "root"
+            "password" : "bingo321"
+            "dbname"   : "spider"
+        } 
+        """
+        super().__init__()
         host = kwargs['host']
         port = kwargs['port']
         username = kwargs['username']
@@ -35,7 +34,10 @@ class OpMongo(object):
             uri = host
         else:
             uri = 'mongodb://%s:%s@%s:%d/%s' % (username,quote(password),host,port,dbname)
-        self._mc = MongoClient(uri)
+        if 'pool_size' in kwargs:
+            self._mc = pymongo.MongoClient(uri, maxPoolSize=kwargs['pool_size'])
+        else:
+            self._mc = pymongo.MongoClient(uri, maxPoolSize=16)
         self._db = self._mc[dbname]
         self._collection = None
 
@@ -70,8 +72,8 @@ class OpMongo(object):
     def execute(self, javascript, *args):
         """ execute `javascript` with optional `args`, low level """
         result = self._db.command('$eval', 
-                                  Code(javascript),
-                                  read_preference = ReadPreference.PRIMARY,
+                                  bson.code.Code(javascript),
+                                  read_preference = pymongo.ReadPreference.PRIMARY,
                                   args = args)
         return result.get('retval', None)
     
@@ -109,18 +111,18 @@ class OpMongo(object):
     
     def explain(self, cursor)->str:
         """ explain """
-        return str(cursor.explain())
+        return cursor.explain()
     
     def find(self, query = {}, sortkey = None, reverse = True, explain = False):
         """ find doc specified by `query`, if `sortkey`, sort result """
         cursor = self._collection.find(query)
         if explain:
-            self.explain(cursor)
+            return self.explain(cursor)
         if sortkey:
             cursor.sort(sortkey, pymongo.DESCENDING if reverse else pymongo.ASCENDING)
         return cursor
     
-    def find_fields(self, query, fields:list):
+    def find_field(self, query, fields:list):
         """ find doc specified by `query`, if `sortkey`, sort result """
         cursor = self._collection.find(query, fields)
         return cursor
@@ -129,14 +131,53 @@ class OpMongo(object):
         return self._collection.distinct(key)
 
 
+class OpMongoDict(object):
+    """ a dict to store more than one OpMongo objects """
+    def __init__(self, **kwargs):
+        """ kwargs is same as OpMongo's kwargs """
+        super().__init__()
+        self.__cfg = kwargs
+        self.__mcd = dict()
+    
+    def remove(self, name):
+        """ name is the key for dict """
+        mc = self.__mcd.pop(name)
+        del mc
+    
+    def add(self, name):
+        """ add a new client """
+        if name in self.__mcd:
+            raise ValueError(name + ' is already existed!')
+        self.__mcd[name] = OpMongo(**self.__cfg)
+    
+    def __getitem__(self, name):
+        """ get client by name """
+        return self.__mcd[name]
+
+
+
 def test():
-    ''' Simple tester for opmongo '''
-    cfg = {'host':DefaultHost, 'port':DefaultPort, 'username':'root', 'password':'', 'dbname':'test'}
-    db = OpMongo(**cfg)
-    colls = db.list_collections()
+    """ Simple tester for opmongo """
+    cfg = {
+        'host' : DefaultHost, 
+        'port' : DefaultPort, 
+        'username' : 'root', 
+        'password' : '', 
+        'dbname' : 'test',
+        'pool_size' : 1
+    }
+    
+    mcd = OpMongoDict(**cfg)
+    mcd.add('mydb1')
+    mcd.add('mydb2')
+    mcd.add('mydb3')
+    colls = mcd['mydb1'].list_collections()
     print(colls)
-    db.choose(colls[0])
-    print(list(db.find({}, explain=True)))
+    
+    mcd['mydb2'].choose(colls[0])
+    for doc in mcd['mydb2'].find({}):
+        print(doc)
+    print(mcd['mydb3'].execute("db.getName()"))
 
 
 if __name__ == '__main__':
