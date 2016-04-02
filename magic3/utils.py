@@ -1,13 +1,18 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # note   : python3.4+
-import asyncio
-import os, sys, traceback, socket
-import _io, json, re, functools
+import os, sys, traceback
+import asyncio, threading, socket
+import json, re, functools
+import _io, codecs
 from _hashlib import openssl_md5
 from base64 import b64encode, b64decode
 from ipaddress import ip_address
 from time import time, strftime, sleep
+
+# get python version tuple like (3, 4)
+PythonVersion = (sys.version_info.major, sys.version_info.minor)
+
 
 def is_valid_ip(ip)->bool:
     """ Returns true if the given string is a well-formed IP address(v4/v6) """
@@ -41,6 +46,7 @@ class IPv4Macher:
     compiled = re.compile(pattern)
     compiled2 = re.compile(pattern.encode(encoding='utf-8'))
 
+
 def to_bytes(obj:object)->bytes:
     """ make object to bytes if supports, using `ascii` as defualt encode """
     if isinstance(obj, str):
@@ -51,6 +57,11 @@ def to_bytes(obj:object)->bytes:
     elif isinstance(obj, (bytes, bytearray)):
         return obj
     return memoryview(obj).tobytes()
+
+def utf8(s, errors='replace')->str:
+    """ transform s to 'utf-8' coding """ 
+    return str(s, 'utf-8', errors=errors)
+
 
 def MD5(buf:bytes)->str:
     """ get md5 hexdigest of bytes """
@@ -76,9 +87,6 @@ def recursive_decode(s:str, level:int=10)->str:
         s = bytes(s, 'utf-8')
     return recursive_decode(b64decode(s), level-1)
 
-def utf8(s, errors='replace')->str:
-    """ transform s to 'utf-8' coding """ 
-    return str(s, 'utf-8', errors=errors)
 
 def load_json(name, objHook=None)->dict:
     """ load json from file return dict """
@@ -108,6 +116,7 @@ class DummyLock:
     def __exit__(self, exctype, excinst, exctb): pass
     def acquire(self, *args, **kwargs): pass
     def release(self, *args, **kwargs): pass
+
 
 def isotime():
     """ return iso datetime, like 2014-03-28 19:45:59 """ 
@@ -145,6 +154,7 @@ def print_error(name, output=sys.stderr):
     sys.stderr.write('%s : %s from :%s\n' % (exc_type, exc_val, name))
     traceback.print_tb(exc_tb, limit=2, file=output)
 
+
 class Timer(object):
     """ a simple timer for debug using """
     def __init__(self):
@@ -162,8 +172,6 @@ class Timer(object):
     def show(self):
         print(str(self))
 
-# get python version tuple like (3, 4)
-PythonVersion = (sys.version_info.major, sys.version_info.minor)
 
 def singleton(cls, *args, **kw):
     """ singleton object wrapper, usage:
@@ -177,6 +185,7 @@ def singleton(cls, *args, **kw):
             instances[cls] = cls(*args, **kw)
         return instances[cls]
     return _object
+
 
 def aio_loop():
     """ get event loop """
@@ -199,6 +208,76 @@ def aio_run(*future, loop=None):
 def aio_to_future(coro, loop=None):
     """ make coroutine to asyncio.Future """
     return asyncio.ensure_future(coro, loop=loop)
+
+def aio_call_at():
+    pass
+
+def aio_call_later():
+    pass
+
+def aio_call_soon():
+    pass
+
+
+class BomHelper(object):
+    """ helper for check/insert/remove BOM head to small utf-8 files,
+        the filesize can Not be larger than 1GB, multi-threads safe!
+    """
+    __lock__ = threading.Lock()
+    def __init__(self, filename, defaultBOM=codecs.BOM_UTF8):
+        """ defaultBOM can be specified by user from valid values in codecs """
+        self.reset(filename, defaultBOM)
+
+    def reset(self, filename, defaultBOM=codecs.BOM_UTF8):
+        """ """
+        if os.path.getsize(filename) > (1<<30):
+            raise RuntimeError('Error: file %s is too large!!!' % self.__name)
+        def _reset():
+            self.__name = filename
+            self.__bom = defaultBOM
+        self.__sync(_reset)
+
+    def __sync(self, fileop):
+        with BomHelper.__lock__:
+            return fileop()
+
+    def __has(self):
+        with open(self.__name, 'rb') as f:
+            return f.read(3) == self.__bom
+
+    def has(self):
+        """ check file has BOM or not """
+        return self.__sync(self.__has)
+
+    def insert(self):
+        """ add BOM to file, the filesize can Not be larger than 1GB """
+        def _insert():
+            if self.__has():
+                return False
+            with open(self.__name, 'rb') as fin:
+                buf = fin.read(os.path.getsize(self.__name))
+            with open(self.__name, 'wb') as fout:
+                fout.write(self.__bom)
+                fout.write(buf)
+            return True
+        return self.__sync(_insert)
+
+    def remove(self):
+        """ remove BOM from file, the filesize can Not be larger than 1GB """
+        def _remove():
+            if not self.__has():
+                return False
+            with open(self.__name, 'rb') as fin:
+                fin.read(len(self.__bom))
+                buf = fin.read(os.path.getsize(self.__name))
+            with open(self.__name, 'wb') as fout:
+                fout.write(buf)
+            return True
+        return self.__sync(_remove)
+
+    def value(self):
+        """ get default BOM value in bytes """
+        return self.__bom
 
 
 def test():
