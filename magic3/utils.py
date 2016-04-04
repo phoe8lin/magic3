@@ -302,6 +302,8 @@ def test():
     d = json.loads(j)
     assert(t in d and 3 in d['key']) 
     assert(MD5(b'abcdef0987654321') == 'eaa1c1d22e330b10903dfdbfed5e6ff9')
+    assert(recursive_decode(recursive_encode('github.com')) == 'github.com')
+    assert(BomHelper("").value() == codecs.BOM_UTF8)
     print('test OK')
 
 
