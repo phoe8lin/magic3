@@ -3,15 +3,33 @@
 # author : cypro666
 # date   : 2015.06.06
 import _io
+from codecs import BOM_UTF8
 try:
     import numpy
 except Exception:
     raise ImportError('warning: numpy can Not be loaded!\n')
 
+def save_counter_as_csv(c:dict, filename:str)->int:
+    """ save counter into a csv file """
+    assert filename.endswith('.csv')
+    nline = 0
+    with open(filename, 'wb') as fout:
+        fout.write(BOM_UTF8)
+        for k in sorted(c,key=lambda x:c[x],reverse=True):
+            try:
+                if isinstance(k, str):
+                    fout.write(b'%d,%s\n' % (c[k], k.encode('utf-8')))
+                else:
+                    fout.write(b'%d,%s\n' % (c[k], k))
+                nline += 1
+            except UnicodeError as e:
+                print(e)
+    return nline
+
 
 def read_csv(name:str, delim=',', 
              withhead=False, strip=True, convert=None, 
-             encoding='utf-8-sig', errors='strict')->([],[]):
+             encoding='utf-8', errors='strict')->([],[]):
     """ read csv file, return head and body as list """
     if convert and strip:
         make = lambda s: convert(s.strip(b'" ').decode(encoding, errors))
@@ -50,7 +68,9 @@ def write_csv(name:str, delim:str, body:list, head:list,
                 body_format = delim.join(['%s']*numpy.shape(body)[0]) + '\n'
     elif not body_format.endswith('\n'):
         body_format += '\n'
-    with _io.open(name, 'w', encoding='utf-8-sig') as fout:
+    with _io.open(name, 'wb') as fout:
+        fout.write(BOM_UTF8)
+    with _io.open(name, 'a', encoding='utf-8') as fout:
         nlines = 0
         if head:
             nlines += 1
@@ -129,7 +149,7 @@ class BivTable(BivTableBase):
     def __init__(self, head=[], body=[]):
         super().__init__(head, body)
 
-    def read(self, name, delim=',', withhead=False, strip=False, convert=None, encoding='utf-8-sig'):
+    def read(self, name, delim=',', withhead=False, strip=False, convert=None, encoding='utf-8'):
         """ read from file, `convert` should be a function like int/str/float/lambda """
         self.head, self.body = read_csv(name, delim, withhead, strip, convert, encoding)
         self.check(self.head, self.body)

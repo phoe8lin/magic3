@@ -4,7 +4,9 @@
 import sys
 import random
 import array 
-from collections import defaultdict
+from _collections import defaultdict
+from _operator import itemgetter
+import heapq
 
 class BiMap(object):
     """ like bimap, can search v from k and search k from v,
@@ -160,6 +162,61 @@ class CounterType(defaultdict):
         return super().__str__()
 
 
+def make_counter(init=0):
+    """ get defaultdict as a int counter """
+    return defaultdict(lambda:init)
+
+def make_nested_defaultdict2(init_func=lambda:0):
+    """ make nested defaultdict, d['k1']['k2'] = something """
+    return defaultdict(lambda:defaultdict(init_func))
+
+def make_nested_counter2(init=0):
+    """ make nested counter, c['k1']['k2'] += 1 """
+    return make_nested_defaultdict2(lambda:init)
+
+def make_nested_defaultdict3(init_func=lambda:0):
+    """ make nested defaultdict, d['k1']['k2']['k3'] = something """
+    return defaultdict(lambda:defaultdict(lambda:defaultdict(init_func)))
+
+def make_nested_counter3(init=0):
+    """ make nested counter, c['k1']['k2']['k3'] += 1 """
+    return make_nested_defaultdict3(lambda:init)
+
+def make_nested_defaultdict4(init_func=lambda:0):
+    """ make nested defaultdict, d['k1']['k2']['k3']['k4'] = something """
+    return defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:defaultdict(init_func))))
+
+def make_nested_counter4(init=0):
+    """ make nested counter, c['k1']['k2']['k3']['k4'] += 1 """
+    return make_nested_defaultdict4(lambda:init)
+
+def defaultdict_to_dict(dd):
+    """ transform defaultdict or nested defaultdict into dict """
+    for i in dd:
+        di = dd[i]
+        if isinstance(di, defaultdict):
+            dd[i] = dict(di)
+            for j in di:
+                dj = di[j]
+                if isinstance(dj, defaultdict):
+                    dd[i][j] = dict(dj)
+                    for k in dj:
+                        dk = dj[k]
+                        if isinstance(dk, defaultdict):
+                            dd[i][j][k] = dict(dk)
+                            for m in dk:
+                                if isinstance(dk[m], defaultdict):
+                                    raise TypeError('depth of nested defaultdict is ')
+    return dict(dd)
+
+def most_common(d:dict, topn=10)->list:
+    """ List the n most common elements and their counts from the most
+        common to the least.  If n is None, then list all element counts """
+    if topn is None or topn == 0:
+        return sorted(d.items(), key=itemgetter(1), reverse=True)
+    return heapq.nlargest(topn, d.items(), key=itemgetter(1))
+
+
 import unittest
 class TestIteralgos(unittest.TestCase):
     """ unit tester for iteralgos """
@@ -210,6 +267,24 @@ class TestIteralgos(unittest.TestCase):
         d = sl.make_dict(True)
         self.assertTrue(len(s) == len(d))
         self.assertTrue(len(d) <= len(sl))
+        
+    def test_dict(self):
+        d4 = make_nested_counter4(0)
+        d4['go1']['in']['key0']['name1'] += 100
+        d4['go2']['in']['key2']['name2'] += 100
+        d4['go2']['in']['key2']['name2'] += 100
+        d4['go5']['in']['key5']['name4'] += 100
+        d4 = defaultdict_to_dict(d4)
+        self.assertTrue(isinstance(d4, dict))
+        self.assertTrue(isinstance(d4['go1'], dict))
+        self.assertTrue(isinstance(d4['go1']['in']['key0'], dict))
+        self.assertTrue(d4['go2']['in']['key2']['name2'] == 200)
+        d = make_counter(10)
+        d[1] += 1
+        d[2] += 2
+        d[3] += 3
+        d[4] += 4
+        self.assertTrue(most_common(d, 2) == [(4, 14), (3, 13)])
 
 
 if __name__ == '__main__':

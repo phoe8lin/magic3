@@ -83,16 +83,16 @@ class AioMysql(object):
         """ clear all tasks """
         self.__fs.clear()
         return self
-    
+
     @property
     def tasks(self):
         assert self.tasks_size
         return aio_tasks(*self.__fs) 
-    
+
     @property
     def tasks_size(self):
         return len(self.__fs)
-    
+
     def run_all_task(self):
         assert self.tasks_size
         try:
@@ -134,9 +134,9 @@ def test_aiodb():
     execute_many = db.execute_many
     execute_with_callback = db.execute_with_callback
     execute_many_with_callback = db.execute_many_with_callback
-    
+
     debug('Test create table')
-    
+
     SQL_DROP = "DROP TABLE IF EXISTS `test_aiodb`"
     SQL_CREATE = """
     CREATE TABLE `test_aiodb` (
@@ -145,7 +145,7 @@ def test_aiodb():
         PRIMARY KEY (id)); 
     SHOW TABLES;
     """
-    
+
     add_task(execute(SQL_DROP)).run_all_task()
     add_task(execute(SQL_CREATE)).run_all_task()
     add_task(execute("SHOW TABLES"), lambda r : debug(list(sorted(r))[0])).run_all_task()
@@ -175,7 +175,7 @@ def test_aiodb():
         execute('SELECT * FROM `test_aiodb` WHERE `id`=5'),
         done_callback = show
     ).run_all_task()
-     
+
     debug('Test double callback')
     add_tasks(
         execute_with_callback(lambda r : r[:1], 'SELECT 1 FROM `test_aiodb`'),
@@ -184,8 +184,9 @@ def test_aiodb():
         done_callback = show
     ).run_all_task()
 
+
 if __name__ == '__main__':
     test_aiodb()
-
+    debug('test OK')
 
 
