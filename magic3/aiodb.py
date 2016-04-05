@@ -8,8 +8,56 @@ from magic3.utils import *
 if PythonVersion <= (3, 4):
     raise ImportError("python version should be >= 3.5.0")
 
-class AioMysql(object):
-    """ """
+
+class AioDBClient(object):
+    """ As base of asyncio database wrappers below """
+    def __init__(self):
+        self._tasks = []
+    
+    def add_task(self, task, done_callback=None):
+        """ add a async task from execute or execute_with_callback """
+        task = aio_to_future(task)
+        if done_callback:
+            task.add_done_callback(lambda f : done_callback(f.result()))
+        self._tasks.append(task)
+        return self
+    
+    def add_tasks(self, *tasks, done_callback=None):
+        """ add multi tasks """
+        for t in tasks:
+            self.add_task(t, done_callback)
+        return self
+
+    def clear_tasks(self):
+        """ clear all tasks """
+        self._tasks.clear()
+        return self
+
+    @property
+    def tasks(self):
+        """ return tasks as futures """
+        assert self.tasks_size
+        return aio_tasks(*self._tasks) 
+
+    @property
+    def tasks_size(self):
+        """ length of tasks list """
+        return len(self._tasks)
+
+    def run_all_task(self):
+        """ blocking call, run all tasks """
+        assert self.tasks_size
+        try:
+            aio_run(self.tasks)
+        except Exception as e:
+            raise e
+        finally:
+            self.clear_tasks()
+        return self
+
+
+class AioMysql(AioDBClient):
+    """ A wrapper of aiomysql for simple and easy using """
     def __init__(self, **kwargs):
         """ kwargs is the options for connecting like:
             {
@@ -19,14 +67,15 @@ class AioMysql(object):
                 "password" : "fucker123",
                 "db"       : "test"
             } """
+        super().__init__()
         self._opt = dict(kwargs)
-        self.__fs = []
 
     def pool(self):
         """ internal using for make aiomysql pool """
         return aiomysql.create_pool(**self._opt)
     
     def connect(self):
+        """ internal using """
         return aiomysql.connect(**self._opt)
 
     async def __execute(self, sql, *args):
@@ -65,64 +114,89 @@ class AioMysql(object):
         cur = await self.__execute_many(sql, argslist)
         return callback(await cur.fetchall())
 
-    def add_task(self, task, done_callback=None):
-        """ add a async task from execute or execute_with_callback """
-        task = aio_to_future(task)
-        if done_callback:
-            task.add_done_callback(lambda f : done_callback(f.result()))
-        self.__fs.append(task)
-        return self
+    @staticmethod
+    def default_connect_args():
+        """ get default connection arguments """
+        return {
+                "host" : '127.0.0.1', 
+                "port" : 3306, 
+                "db"   : 'test', 
+                "user" : 'root', 
+                "password" : ''
+        }
+
+
+class AioRedis(AioDBClient):
+    """ A wrapper of aiomysql for simple and easy using """
+    def __init__(self, host='localhost', port=6379):
+        self._host = host
+        self._port = port
+        self._tasks = []
+        self._poolsize = (4, 16)
+        
+    def set_pool_size(self, minsize, maxsize):
+        """ set min and max size of pool """
+        if minsize <= 0:
+            minsize = 1
+        if maxsize <= 0:
+            maxsize = 1
+        self._poolsize = (minsize, maxsize)
     
-    def add_tasks(self, *tasks, done_callback=None):
-        """ add multi tasks """
-        for t in tasks:
-            self.add_task(t, done_callback)
-        return self
-
-    def clear_tasks(self):
-        """ clear all tasks """
-        self.__fs.clear()
-        return self
-
-    @property
-    def tasks(self):
-        assert self.tasks_size
-        return aio_tasks(*self.__fs) 
-
-    @property
-    def tasks_size(self):
-        return len(self.__fs)
-
-    def run_all_task(self):
-        assert self.tasks_size
+    def pool(self):
+        """ internal using """
+        return aioredis.create_pool((self._host, self._port), minsize=self._poolsize[0], maxsize=self._poolsize[1])
+    
+    def connect(self):
+        """ internal using """
+        return aioredis.create_connection((self._host, self._port), encoding='utf-8')
+    
+    async def execute(self, cmd:str):
+        """ execute one command """
+        con = await self.connect()
         try:
-            aio_run(self.tasks)
-        except Exception as e:
-            raise e
+            if ' ' in cmd:
+                method, args = cmd.split(' ', 1)
+                return await con.execute(method.upper(), *args.strip().split())
+            else:
+                return await con.execute(cmd)
         finally:
-            self.clear_tasks()
-        return self
+            con.close()
+    
+    async def execute_many(self, cmds:list):
+        """ execute more commands in the list """
+        pool = await self.pool()
+        try:
+            ret = []
+            async with pool.get() as con:
+                for cmd, args in map(lambda _: _.split(' ', 1), cmds):
+                    method = getattr(con, cmd.lower())
+                    ret.append(await method(*args.split()))
+            return ret
+        finally:
+            await pool.clear()
+    
+    async def dbsize(self):
+        """ DBSIZE command is a special command, so makes it a method """
+        con = await self.connect()
+        try:
+            return await con.execute('DBSIZE')
+        finally:
+            con.close()
+    
+    @staticmethod 
+    def default_connect_args():
+        return ('localhost', 6379)
 
 
 def input_password():
     """ help tester to get the password from console input """
     return str(getpass.getpass('Enter mysql password:'))
 
-def default_connect_args():
-    """ get default connection arguments """
-    return {
-        "host" : '127.0.0.1', 
-        "port" : 3306, 
-        "db"   : 'test', 
-        "user" : 'root', 
-        "password" : ''
-    }
 
-
-def test_aiodb():
+def test_aiomysql():
     """ simple test for this AioMysql """
     show = lambda r: debug(list(r))
-    options = default_connect_args()
+    options = AioMysql.default_connect_args()
     options['password'] = input_password()
     
     db = AioMysql(**options)
@@ -185,8 +259,30 @@ def test_aiodb():
     ).run_all_task()
 
 
+def test_aioredis():
+    """ simple test for this AioRedis """
+    n = 0
+    def cb(x):
+        nonlocal n
+        n += len(x)
+    ar = AioRedis()
+    ar.add_task(ar.dbsize(), lambda n: debug('DBSIZE:', n)).run_all_task()
+    ar.add_task(ar.execute_many(['SET my-key-for-test my-val', 'SET QQ-for-test 123'] * 500), cb).run_all_task()
+    ar.add_task(ar.execute_many(['GET my-key-for-test', 'GET QQ-for-test'] * 500), cb).run_all_task()
+    ar.add_task(ar.dbsize(), lambda n: debug('DBSIZE:', n)).run_all_task()
+    ar.add_tasks(
+        ar.execute('DEL my-key-for-test'), 
+        ar.execute('DEL QQ'),
+    ).run_all_task()
+    ar.add_task(ar.dbsize(), lambda n: debug('DBSIZE:', n)).run_all_task()
+    debug(n)
+
+
 if __name__ == '__main__':
-    test_aiodb()
-    debug('test OK')
+    debug('Test AioMysql')
+    test_aiomysql()
+    debug('Test AioRedis')
+    test_aioredis()
+    debug('Test OK')
 
 

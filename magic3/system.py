@@ -2,7 +2,7 @@
 # author : cypro666
 # note   : python3.4+
 """ this module only works on unix/linux systems!!! """
-import sys, gc, time
+import sys, gc, time, os
 from threading import Thread
 from subprocess import Popen, PIPE, getstatusoutput
 
@@ -16,6 +16,10 @@ def _set_unexcepted_hook(excepthook):
             pass
     """
     sys.excepthook = excepthook
+
+def get_cpu_count():
+    """ Return the number of CPUs in the system; return None if indeterminable """
+    return os.cpu_count()
 
 def sys_reconfig():
     """ set global best configs, eg: gc and recursion limit """
@@ -134,6 +138,8 @@ def test():
     except:
         pass
     pprint.pprint(sys_reconfig())
+    
+    assert (get_cpu_count() >= 1)
 
 
 if __name__ == '__main__':

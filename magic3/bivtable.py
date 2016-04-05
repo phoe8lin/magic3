@@ -9,12 +9,18 @@ try:
 except Exception:
     raise ImportError('warning: numpy can Not be loaded!\n')
 
-def save_counter_as_csv(c:dict, filename:str)->int:
+def save_counter_as_csv(c:dict, filename:str, head=[])->int:
     """ save counter into a csv file """
     assert filename.endswith('.csv')
     nline = 0
+    try:
+        header = b',',join(head)
+    except TypeError:
+        header = ','.join(head).encode(encoding='utf-8')
     with open(filename, 'wb') as fout:
         fout.write(BOM_UTF8)
+        if header:
+            fout.write(header + b'\n')
         for k in sorted(c,key=lambda x:c[x],reverse=True):
             try:
                 if isinstance(k, str):

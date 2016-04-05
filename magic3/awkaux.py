@@ -5,7 +5,7 @@ from os.path import exists
 from string import Template
 from magic3.system import OSCommand
 
-AWK_CMD = Template("""awk -F "$delim" '{print $vargs}' $files 2>&1""")
+AWK_CMD = Template("""awk -F "${delim}" '{print ${vargs}}' ${files} 2>&1""")
 
 def open_awk(filelist:list, pos_args:list, delim):
     """ call awk command and return an opened pipe for read the output of awk, eg:
