@@ -2,8 +2,10 @@
 # author : cypro666
 # note   : python3.4+
 import os, sys, traceback
-import asyncio, threading, socket
-import json, re, functools
+import asyncio, concurrent
+import threading, socket
+import json, re
+import functools
 import _io, codecs
 from _hashlib import openssl_md5
 from base64 import b64encode, b64decode
@@ -187,8 +189,17 @@ def singleton(cls, *args, **kw):
     return _object
 
 
+def aio_new_loop(executor=None):
+    """ get new event loop with ThreadPoolExecutor """
+    loop = asyncio.new_event_loop()
+    if executor:
+        loop.set_default_executor(executor)
+    else:
+        loop.set_default_executor(concurrent.futures.ThreadPoolExecutor())
+    return loop
+
 def aio_loop():
-    """ get event loop """
+    """ get current event loop """
     return asyncio.get_event_loop()
 
 def aio_tasks(*future):
@@ -209,14 +220,45 @@ def aio_to_future(coro, loop=None):
     """ make coroutine to asyncio.Future """
     return asyncio.ensure_future(coro, loop=loop)
 
-def aio_call_at():
-    pass
+def make_aio_thread(new=False, daemon=True, name=None):
+    """ Make a pair of asyncio loop and run_forever thread """
+    if new:
+        loop = aio_new_loop()
+    else:
+        loop = aio_loop()
+    aiothread = threading.Thread(target=loop.run_forever, name=name)
+    aiothread.daemon = daemon
+    aiothread.start()
+    return (loop, aiothread)
+    
+def aio_call_soon(function, *args, loop=None, **kwargs):
+    """ Arrange for a callback to be called as soon as possible
+        Callbacks are called in the order in which they are registered
+        Each callback will be called exactly once """
+    if not loop:
+        loop = aio_loop()
+    loop.call_soon(functools.partial(function,  *args, **kwargs))
+    
+def aio_call_soon_safe(function, *args, loop=None, **kwargs):
+    """ Like aio_call_soon, but multi threads safe """
+    if not loop:
+        loop = aio_loop()
+    loop.call_soon_threadsafe(functools.partial(function,  *args, **kwargs))
 
-def aio_call_later():
-    pass
+def aio_call_later(delay, function, *args, loop=None, **kwargs):
+    """ Arrange for a callback to be called at a given time 
+        Return a handler with cancel method that can be used to cancel the call 
+        The delay can be an int or float in seconds which always relative to the current time """
+    if not loop:
+        loop = aio_loop()
+    loop.call_later(delay, functools.partial(function,  *args, **kwargs))
 
-def aio_call_soon():
-    pass
+def aio_call_at(aiotime, function, *args, loop=None, **kwargs):
+    """ Like call_later(), but uses an absolute time which 
+        corresponds to the event loop's time() method """
+    if not loop:
+        loop = aio_loop()
+    loop.call_at(aiotime, functools.partial(function,  *args, **kwargs))
 
 
 class BomHelper(object):
@@ -303,8 +345,19 @@ def test():
     assert(t in d and 3 in d['key']) 
     assert(MD5(b'abcdef0987654321') == 'eaa1c1d22e330b10903dfdbfed5e6ff9')
     assert(recursive_decode(recursive_encode('github.com')) == 'github.com')
-    assert(BomHelper("").value() == codecs.BOM_UTF8)
-    print('test OK')
+    assert(BomHelper(__file__).value() == codecs.BOM_UTF8)
+    
+    def userfunc(arg, **kwargs):
+        d[arg] = kwargs['a']
+    aio_call_soon(userfunc, 111, a=111)
+    aio_call_soon_safe(userfunc, 222, a=222)
+    aio_call_later(1, userfunc, 333, a=333)
+    aio_call_at(aio_loop().time() + 2, userfunc, 444, a=444)
+    loop, aioth = make_aio_thread()
+    sleep(2)
+    for i in range(1,5):
+        assert d[i*111] == i*111
+    debug(__file__, ':Test OK')
 
 
 if __name__ == '__main__':
