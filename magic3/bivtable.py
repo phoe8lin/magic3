@@ -14,7 +14,7 @@ def save_counter_as_csv(c:dict, filename:str, head=[])->int:
     assert filename.endswith('.csv')
     nline = 0
     try:
-        header = b',',join(head)
+        header = b','.join(head)
     except TypeError:
         header = ','.join(head).encode(encoding='utf-8')
     with open(filename, 'wb') as fout:
