@@ -4,13 +4,71 @@
 # date   : 2015.06.06
 import os
 import re
-from _io import open, DEFAULT_BUFFER_SIZE
+from os.path import exists
+from _io import open, DEFAULT_BUFFER_SIZE, BytesIO
 from abc import abstractmethod, ABCMeta
+from string import Template
 from magic3.utils import debug
 from magic3.filesystem import user_dir,list_dir
-from magic3.awkaux import read_from_awk
+from magic3.system import OSCommand
 
+AWK_CMD = Template("""awk -F "${delim}" '{print ${vargs}}' ${files} 2>&1""")
 bestIOBufferSize = DEFAULT_BUFFER_SIZE << 2
+ONE_GB = (1024*1024*1024)
+
+def open_awk(filelist:list, pos_args:list, delim):
+    """ call awk command and return an opened pipe for read the output of awk, eg:
+        for line in open_awk([file1, file2], [2,3,4], ',').stdout:
+            print(line)   
+    """
+    if isinstance(delim, (bytes, bytearray)):
+        delim = str(delim, 'utf-8')
+    if not filelist:
+        raise ValueError('filelist')
+    if not pos_args:
+        raise ValueError('pos_args')
+    if len(delim) != 1:
+        raise ValueError('delim must be a length 1 char')
+    for fn in filelist:
+        if not exists(fn):
+            raise FileNotFoundError(fn)
+    for i in pos_args:
+        if not isinstance(i, (int, str)):
+            raise TypeError(pos_args)
+        if isinstance(i, str) and not i.isdigit():
+            raise TypeError(pos_args)
+    cmd = AWK_CMD.safe_substitute(delim = delim,
+                                  vargs = ','.join(map(lambda x:'$' + str(x), pos_args)),
+                                  files = ' '.join(filelist))
+    if __debug__:
+        print(cmd)
+    return OSCommand.popen(cmd)
+
+def read_from_awk(filelist:list, pos_args:list, delim=' ')->iter:
+    """ call awk command and return an iterator for reading the output of awk """
+    reader = open_awk(filelist, pos_args, delim).stdout
+    if reader.readable() and not reader.closed:
+        return iter(reader)
+    else:
+        raise RuntimeError('open_awk failed')
+
+def read_from_awk_with_callback(callback, filelist:list, pos_args:list, delim=' ')->iter:
+    """ call awk command and return an iterator of callback's return for each line in output """
+    reader = open_awk(filelist, pos_args, delim).stdout
+    if reader.readable() and not reader.closed:
+        return map(callback, reader)
+    else:
+        raise RuntimeError('open_awk failed')
+
+def open_as_byte_stream(filename):
+    """ if filesize < ONE_GB, read whole file as BytesIO object """
+    filesize = os.path.getsize(filename)
+    if filesize < ONE_GB:
+        with open(filename, 'rb') as f:
+            return BytesIO(f.read(filesize))
+    else:
+        return open(filename, 'rb', buffering=bestIOBufferSize)
+
 
 class LineParserBase(metaclass=ABCMeta):
     """ inherit this class and implement `run` and `parse_line` method """
@@ -116,8 +174,18 @@ def test():
     p2.run([3,4,5,6])
     print(p2.count)
 
+    d = {}
+    for line in read_from_awk([__file__, __file__, __file__], [2, 3]):
+        for s in line.split():
+            try: d[s] += 1
+            except: d[s] = 1
+    for k, v in d.items():
+        assert v >= 3
+    print('test OK')
+
 
 if __name__ == '__main__':
     test()
+
 
 
