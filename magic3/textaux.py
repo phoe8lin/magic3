@@ -64,7 +64,7 @@ reURL = re.compile("((http|ftp|https):"
 reDate = re.compile("(\\d{2}|\\d{4})[ -][0-2][1-9][ -][0-3][0-9]", re.IGNORECASE)
 
 # regex for match standard time
-reTime = re.compile("\d{1,2}:\d{2} ?(?:[AP]\.?M\.?)?|\d[AP]\.?M\.?", re.IGNORECASE)
+reTime = re.compile("\\d{1,2}:\\d{2} ?(?:[AP]\\.?M\\.?)?|\\d[AP]\\.?M\\.?|(:\\d{2})?", re.IGNORECASE)
 
 # regex for match telephone number
 rePhone = re.compile("("
