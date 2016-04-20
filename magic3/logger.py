@@ -33,7 +33,7 @@ class Logger(object):
     def __init__(self, logfile, append=True, locktype=DummyLock):
         """ make sure logfile's path is existed and valid """
         self.__logfile = logfile
-        self.__nlevel = {'debug':0, 'info':0, 'warn':0, 'error':0, 'critical':0}
+        self.__nlevel = {'debug':0, 'info':0, 'warn':0, 'error':0, 'fatal':0}
         self.__nlines = 0
         self.__lock = locktype()
         self.mode = 'a' if append else 'w'
@@ -45,11 +45,11 @@ class Logger(object):
                             level=self.level,
                             datefmt=self.dtfmt,
                             format=self.msgfmt)
-        self.__log = { 'debug'    : logging.debug,
-                       'info'     : logging.info,
-                       'warn'     : logging.warn,
-                       'error'    : logging.error,
-                       'critical' : logging.critical }
+        self.__log = { 'debug' : logging.debug,
+                       'info'  : logging.info,
+                       'warn'  : logging.warn,
+                       'error' : logging.error,
+                       'fatal' : logging.fatal }
 
     def __del__(self):
         """ not nessesary """
@@ -105,8 +105,8 @@ class Logger(object):
     def error(self, *messages):
         self.__call__(*messages, level='error', tb=_caller(1))
         
-    def critical(self, *messages):
-        self.__call__(*messages, level='critical', tb=_caller(1))
+    def fatal(self, *messages):
+        self.__call__(*messages, level='fatal', tb=_caller(1))
     
     def current_lines(self)->int:
         """ get number lines in current log file """ 
@@ -117,35 +117,16 @@ class Logger(object):
         return self.__nlevel.copy()
 
 
-defaultLog = None
-INFO = None 
-WARN = None
-ERROR = None
-DEBUG = None
-CRITICAL = None
-
-def init_default_log(name):
-    global defaultLog, INFO, WARN, ERROR, DEBUG, CRITICAL
-    if not defaultLog:
-        defaultLog = Logger(name)
-    if not INFO:
-        INFO = defaultLog.info
-    if not WARN:
-        WARN = defaultLog.warn
-    if not ERROR:
-        ERROR = defaultLog.error
-    if not DEBUG:
-        DEBUG = defaultLog.debug
-    if not CRITICAL:
-        CRITICAL = defaultLog.critical
-    return defaultLog
-
-
 def test():
     """ test for Logger """
-    log = init_default_log(os.path.expanduser('~') + os.sep + 'test.log')
+    log = Logger(os.path.expanduser('~') + os.sep + 'test.log')
     log.check()
     print('log file : %s' % log.filename())
+    INFO = log.info
+    WARN = log.warn
+    ERROR = log.error
+    DEBUG = log.debug
+    FATAL = log.fatal
     INFO('log test start...')
     DEBUG('this is debug: %s' % __name__)
     INFO('this is info')
@@ -155,7 +136,7 @@ def test():
     ERROR('this is also error!')
     INFO('some value:', 123456)
     INFO({'the first':'info', 'the second':'info'})
-    CRITICAL('fuck!!!')
+    FATAL('fuck!!!')
     INFO('log test finish...')
     print('log lines:', log.current_lines())
     print('log levels:', log.current_levels())
@@ -164,5 +145,6 @@ def test():
 
 if __name__ == '__main__':
     test()
+
 
 
