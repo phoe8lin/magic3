@@ -70,98 +70,62 @@ class Response(object):
         return (len(self.header), len(self.content))
 
 
-if PythonVersion >= (3, 5):
-    async def fetch_with_session(session, callback, url, **options):
-        """ default options:
-            params = None
-            data = None 
-            allow_redirects = True
-            max_redirects = 5
-        """
-        if not validURL.match(url):
-            raise ValueError(url)
-        if not options:
-            options['allow_redirects'] = True
-            options['max_redirects'] = 5
-        with aiohttp.Timeout(10):
-            async with session.get(url, headers=httpHeader, **options) as r:
-                content = await r.content.read()
-        return callback(Response(url, dict(r.headers), content))
-    
-    async def fetch(callback, url, **options):
-        """ default options:
-            params = None
-            data = None 
-            allow_redirects = True
-            max_redirects = 5
-        """
-        with aiohttp.ClientSession() as session:
-            return await fetch_with_session(session, callback, url, **options)
-    
-    async def fetch_multi_with_session(session, callback, urls:list, **options):
-        """ fetch more than one url by specific session """
-        fetchers = [ fetch_with_session(session, callback, url, **options) for url in urls ]
-        return await asyncio.tasks.wait(fetchers)
-    
-    async def fetch_multi(callback, urls:list, **options):
-        """ fetch more than one url, see fetch above """
-        fetchers = [ fetch(callback, url, **options) for url in urls ]
-        return await asyncio.tasks.wait(fetchers)
+async def fetch_with_session(method, session, callback, url, **options):
+    """ default options:
+        params = None
+        data = None
+        allow_redirects = True
+        max_redirects = 5
+    `method` should be GET/POST/HEAD
+    """
+    if not validURL.match(url):
+        raise ValueError(url)
+    if not options:
+        options['allow_redirects'] = True
+        options['max_redirects'] = 5
+    if method == 'GET':
+        method = session.get
+    elif method == 'POST':
+        method = session.post
+    elif method == 'HEAD':
+        method = session.head
+    else:
+        raise TypeError(method)
+    with aiohttp.Timeout(10):
+        async with method(url, headers=httpHeader, **options) as r:
+            content = await r.content.read()
+    return callback(Response(url, dict(r.headers), content))
 
-else:   # PythonVersion < (3, 5):
-    @asyncio.coroutine
-    def fetch_with_session(session, callback, url, **options):
-        """ default options:
-            params = None
-            data = None 
-            allow_redirects = True
-            max_redirects = 5
-        """
-        if not validURL.match(url):
-            raise ValueError(url)
-        if not options:
-            options['allow_redirects'] = True
-            options['max_redirects'] = 5
-        with aiohttp.Timeout(10):
-            r = yield from session.get(url, headers=httpHeader, **options)
-            try:
-                content = yield from r.content.read()
-            finally:
-                r.close()
-        return callback(Response(url, dict(r.headers), content))
-    
-    @asyncio.coroutine
-    def fetch(callback, url, **options):
-        """ default options:
-            params = None
-            data = None 
-            allow_redirects = True
-            max_redirects = 5
-        """
-        with aiohttp.ClientSession() as session:
-            ret = yield from fetch_with_session(session, callback, url, **options)
-            return ret
-    
-    @asyncio.coroutine
-    def fetch_multi_with_session(session, callback, urls:list, **options):
-        """ fetch more than one url by specific session """
-        fetchers = [ fetch_with_session(session, callback, url, **options) for url in urls ]
-        ret = yield from asyncio.tasks.wait(fetchers)
-        return ret
-    
-    @asyncio.coroutine
-    def fetch_multi(callback, urls:list, **options):
-        """ fetch more than one url, see fetch above """
-        fetchers = [ fetch(callback, url, **options) for url in urls ]
-        ret = yield from asyncio.tasks.wait(fetchers)
-        return ret
+
+async def fetch(method, callback, url, **options):
+    """ default options:
+        params = None
+        data = None 
+        allow_redirects = True
+        max_redirects = 5
+    `method` should be GET/POST/HEAD
+    """
+    with aiohttp.ClientSession() as session:
+        return await fetch_with_session(method, session, callback, url, **options)
+
+
+async def fetch_multi_with_session(method, session, callback, urls:list, **options):
+    """ fetch more than one url by specific session """
+    fetchers = [ fetch_with_session(method, session, callback, url, **options) for url in urls ]
+    return await asyncio.tasks.wait(fetchers)
+
+
+async def fetch_multi(method, callback, urls:list, **options):
+    """ fetch more than one url, see fetch above """
+    fetchers = [ fetch(method, callback, url, **options) for url in urls ]
+    return await asyncio.tasks.wait(fetchers)
 
 
 def test_fetch():
     aio_run(
-        fetch(lambda r : print(r.url, len(r.content)), 'https://www.taobao.com'),
-        fetch(lambda r : print(r.url, len(r.content)), 'http://www.csdn.net'),
-        fetch(lambda r : print(r.url, len(r.content)), 'http://git.oschina.net')
+        fetch('GET', lambda r : print(r.url, len(r.content)), 'https://www.taobao.com'),
+        fetch('GET', lambda r : print(r.url, len(r.content)), 'http://www.csdn.net'),
+        fetch('GET', lambda r : print(r.url, len(r.content)), 'http://git.oschina.net')
     )
 
 def test_dcache():
@@ -170,9 +134,9 @@ def test_dcache():
     urls = ['https://www.baidu.com', 
             'http://www.sina.com.cn', 
             'http://www.163.com']
-    aio_run(fetch_multi(callback, urls))
+    aio_run(fetch_multi('GET', callback, urls))
     print(cc._cache)
-    
+
 
 if __name__ == '__main__':
     test_fetch()
