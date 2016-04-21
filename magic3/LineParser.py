@@ -71,7 +71,7 @@ def OpenAsByteStream(filename):
 
 
 class LineParserBase(metaclass=ABCMeta):
-    """ inherit this class and implement `Run` and `parse_line` method """
+    """ inherit this class and implement `Run` and `ParseLine` method """
     def __init__(self, filenames=[], filedir='', namefilter='.*'):
         self._files = filenames if filenames else []
         self._dir = filedir
@@ -97,7 +97,7 @@ class LineParserBase(metaclass=ABCMeta):
 
     def Read(self, fn, mode='rb', encoding='utf-8-sig', errors='replace'):
         bufsize = bestIOBufferSize
-        parser_ = self.parse_line
+        parser_ = self.ParseLine
         if 'b' in mode:
             for line in open(fn, mode, buffering=bufsize):
                 parser_(line.rstrip())
@@ -112,7 +112,7 @@ class LineParserBase(metaclass=ABCMeta):
             self.Read(each, mode, encoding)
     
     @abstractmethod
-    def parse_line(self, line):
+    def ParseLine(self, line):
         raise NotImplementedError('inherit this method in subclasses!')
     
     def Run(self):
@@ -130,12 +130,12 @@ class AWKLineParserBase(LineParserBase):
 
     def Read(self, fn):
         delimb = bytes(self._delim, 'utf-8')
-        parser_ = self.parse_line
+        parser_ = self.ParseLine
         for line in ReadFromAWK([fn], self._fields, self._delim):
             parser_(line.rstrip().split(delimb))
 
     @abstractmethod
-    def parse_line(self, seps:list):
+    def ParseLine(self, seps:list):
         raise NotImplementedError('inherit this method in subclasses!')
 
     def ReadAll(self):
@@ -155,7 +155,7 @@ def test():
         def __init__(self, name):
             super().__init__(filenames=[name])
             self.count = 0
-        def parse_line(self, line):
+        def ParseLine(self, line):
             words = [s for s in line.split() if len(s) >= 1]
             self.count += len(words)
         
@@ -163,7 +163,7 @@ def test():
         def __init__(self, name):
             super().__init__(filenames=[name])
             self.count = 0
-        def parse_line(self, seps):
+        def ParseLine(self, seps):
             words = [s for s in seps if len(s) >= 1]
             self.count += len(words)
 
