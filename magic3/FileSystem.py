@@ -7,6 +7,13 @@ from pathlib import Path
 from platform import platform
 from magic3.Utils import Debug
 
+def AddPythonPath(name:str)->bool:
+    """ add name into sys.path """
+    if name in sys.path:
+        return False
+    sys.path.insert(0, name)
+    return True
+
 def UserDir():
     """ return current user's dir with os.sep """
     return os.path.expanduser('~') + os.sep
@@ -20,8 +27,12 @@ def CurDir():
     return str(Path(os.path.curdir).absolute())
 
 def ParentDir(fn):
-    """ return parent directory """
+    """ return parent directory of existed filename """
     return str(Path(fn).parent.absolute()) + os.sep
+
+def GrandsireDir(fn):
+    """ return grand father directory of existed filename """
+    return ParentDir(ParentDir(fn))
 
 def CMAFileTime(fn):
     """ get file time : ctime, mtime, atime """
@@ -162,7 +173,12 @@ def test(path):
     print(fs)
     print('\ntest ScanDir:')
     print(ScanDir(path))
-    print('test OK')
+    AddPythonPath(__file__)
+    assert sys.path[0] == __file__
+    gd = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    print(GrandsireDir(__file__))
+    assert GrandsireDir(__file__) == gd + os.sep 
+    print('\ntest OK')
 
 
 if __name__ == '__main__':
