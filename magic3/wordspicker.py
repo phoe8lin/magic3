@@ -14,25 +14,25 @@ ReNoneChinese = re.compile("[\u0000-\u4DFF]|[\u9FA5-\uFFFF]")
 # used for split sentence and pick chinese parts and english words
 ReNoneChineseEnglish = re.compile("[\u0000-\u002F]|[\u003A-\u0040]|[\u005B-\u0060]|[\u007B-\u4DFF]|[\u9FA5-\uFFFF]")
 
-def pickEnglish(s:str):
+def PickEnglish(s:str):
     """ picking english words splited by other characters """
     return tuple(ReOnlyEnglish.findall(s))
 
-def pickChinese(s:str):
+def PickChinese(s:str):
     """ like pickEnglish, but serve for chinese sentence """
     return tuple(w for w in ReNoneChinese.split(s) if w)
     
-def pickWords(s:str):
+def PickWords(s:str):
     """ combined of `pickEnglish` and `pickChinese` """
     return tuple(w for w in ReNoneChineseEnglish.split(s) if w)
 
 # source string of function `wordSplit`
 # compile this in runtime for better performance
 _WordSplitCodes = """
-def wordSplit(inputString:str, charset:set)->tuple:
+def WordSplit(inputstr:str, charset:set)->tuple:
     buf = []
     def _extract():
-        for c in inputString:
+        for c in inputstr:
             if c in charset:
                 buf.append(c)
             elif buf:
@@ -43,18 +43,18 @@ def wordSplit(inputString:str, charset:set)->tuple:
 
 # check and compile `wordSplit`, for readability
 # assign from globals dict again, it's useless
-if 'wordSplit' not in globals():
+if 'WordSplit' not in globals():
     __ByteCodes = _compile(_WordSplitCodes, filename='', mode='exec', optimize=2)
     exec(__ByteCodes)
-wordSplit = globals()['wordSplit']
+WordSplit = globals()['WordSplit']
 
-def createEnglishCharset():
+def CreateEnglishCharset():
     """ return a set contains english chars """
     uppers = set(chr(i) for i in range(ord('a'),ord('z')))
     lowers = set(chr(i) for i in range(ord('A'),ord('Z')))
     return uppers | lowers
 
-def createChineseCharset():
+def CreateChineseCharset():
     """ return a set contains chinese chars in utf-8 """
     codet = Template("""
 <% 
@@ -70,10 +70,10 @@ set((
     src = codet.render(prefix='\"\\u', suffix='\"')
     return eval(compile(src, filename='', mode='eval', optimize=2))
 
-def createAllCharset():
+def CreateAllCharset():
     """ combined of above """
-    en_chr = createEnglishCharset()
-    zh_chr = createChineseCharset()
+    en_chr = CreateEnglishCharset()
+    zh_chr = CreateChineseCharset()
     all_chr = en_chr | zh_chr
     return all_chr
 
@@ -81,12 +81,12 @@ def createAllCharset():
 def test():
     """ simple test for this module """
     rawstr = "哔哩！哔哩？Ha+ha! ☆ 弹幕视频网 x（╯□╰）x 乾杯~ … china-bilibili@acg.net 莪咏逺嗳伱..."
-    print(pickEnglish(rawstr))
-    print(pickChinese(rawstr))
-    print(pickWords(rawstr))
-    print(wordSplit(rawstr, createEnglishCharset()))
-    print(wordSplit(rawstr, createChineseCharset()))
-    print(wordSplit(rawstr, createAllCharset()))
+    print(PickEnglish(rawstr))
+    print(PickChinese(rawstr))
+    print(PickWords(rawstr))
+    print(WordSplit(rawstr, CreateEnglishCharset()))
+    print(WordSplit(rawstr, CreateChineseCharset()))
+    print(WordSplit(rawstr, CreateAllCharset()))
 
 if __name__ == '__main__':
     test()
