@@ -553,21 +553,21 @@ orderedMimeDict = OrderedDict(sorted(mimeDict.items()))
 contentTypeSet = frozenset(mimeDict.values())
 
 
-def is_valid_ext(ext:str, icase=False):
+def IsValidExt(ext:str, icase=False):
     """ """
     return (ext.lower() if icase else ext) in mimeDict
 
-def is_valid_ct(ct:str, icase=False):
+def IsValidContentType(ct:str, icase=False):
     """ """
     return ct in contentTypeSet
 
 
 if __name__ == '__main__':
     """ test """
-    assert is_valid_ext('.exe')
-    assert not is_valid_ext('.fuck')
-    assert is_valid_ct('application/octet-stream')
-    assert not is_valid_ct('application/suck')
+    assert IsValidExt('.exe')
+    assert not IsValidExt('.fuck')
+    assert IsValidContentType('application/octet-stream')
+    assert not IsValidContentType('application/suck')
     print('.swf:', orderedMimeDict['.swf'])
 
 

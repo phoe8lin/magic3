@@ -25,28 +25,29 @@ class BiMap(object):
         assert len(self._kv) == len(self._vk)
         return len(self._kv)
     
+    @property
     def size(self):
         return (self.__len__(), sys.getsizeof(self))
     
-    def clear(self):
+    def Clear(self):
         self._kv.clear()
         self._kv = {}
         self._vk.clear()
         self._vk = {}
     
-    def iter_key_value(self):
+    def IterKeyValue(self):
         return iter(self._kv.items())
     
-    def iter_value_key(self):
+    def IterValueKey(self):
         return iter(self._vk.items())
     
-    def zip(self):
+    def Zip(self):
         return zip(self._kv, self._vk)
     
-    def has_key(self, key):
+    def HasKey(self, key):
         return key in self._kv
     
-    def has_value(self, val):
+    def HasValue(self, val):
         return val in self._vk
     
     def __contains__(self, obj):
@@ -56,10 +57,10 @@ class BiMap(object):
             return True
         return False
     
-    def get_value(self, key):
+    def GetValue(self, key):
         return self._kv[key]
     
-    def get_key(self, val):
+    def GetKey(self, val):
         return self._vk[val]
     
     def __getitem__(self, obj):
@@ -76,12 +77,12 @@ class BiMap(object):
         self._vk[val] = key
         assert len(self._kv) == len(self._vk)
     
-    def update(self, key, val):
+    def Update(self, key, val):
         self.__setitem__(key, val)
         
-    def from_iter(self, iterable, clear=True):
+    def FromIter(self, iterable, clear=True):
         if clear:
-            self.clear()
+            self.Clear()
         for k, v in iterable:
             self.__setitem__(k, v)
 
@@ -92,10 +93,10 @@ class BisectList(list):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     
-    def make_set(self)->set:
+    def MakeSet(self)->set:
         return set(self)
     
-    def make_dict(self, aggregate = False)->dict:
+    def MakeDict(self, aggregate = False)->dict:
         if not aggregate:
             return dict(enumerate(self))
         grouper = {}
@@ -105,7 +106,7 @@ class BisectList(list):
             grouper[val].append(index)
         return grouper
     
-    def binary_search(self, x)->int:
+    def BinarySearch(self, x)->int:
         lo = 0
         hi = self.__len__()
         while lo < hi:
@@ -118,7 +119,7 @@ class BisectList(list):
                 hi = mid
             return -1
 
-    def bisect(self, x, lo = 0, hi = None, right = False)->int:
+    def Bisect(self, x, lo = 0, hi = None, right = False)->int:
         if lo < 0:
             raise ValueError('lo must be non-negative')
         if hi is None:
@@ -139,8 +140,8 @@ class BisectList(list):
                     hi = mid
         return lo
     
-    def insort(self, x, lo = 0, hi = None, right = False)->int:
-        pos = self.bisect(x, lo, hi, right)
+    def Insort(self, x, lo = 0, hi = None, right = False)->int:
+        pos = self.Bisect(x, lo, hi, right)
         self.insert(pos, x)
         return pos
 
@@ -150,47 +151,47 @@ class CounterType(defaultdict):
     def __init__(self, valuemaker=lambda:0):
         super().__init__(valuemaker)
     
-    def sorted(self, reverse=True)->tuple:
+    def Sorted(self, reverse=True)->tuple:
         for k in sorted(self, key=lambda x:self[x], reverse=reverse):
             yield (k, self[k])
     
-    def sorted_formated(self, formats='%d, %s', reverse=True)->str:
-        for k, v in self.sorted(reverse):
+    def SortedFormated(self, formats='%d, %s', reverse=True)->str:
+        for k, v in self.Sorted(reverse):
             yield formats % (v, k)
     
     def __str__(self, *args, **kwargs):
         return super().__str__()
 
 
-def make_counter(init=0):
+def MakeCounter(init=0):
     """ get defaultdict as a int counter """
     return defaultdict(lambda:init)
 
-def make_nested_defaultdict2(init_func=lambda:0):
+def MakeNestedDefaultDict2(init_func=lambda:0):
     """ make nested defaultdict, d['k1']['k2'] = something """
     return defaultdict(lambda:defaultdict(init_func))
 
-def make_nested_counter2(init=0):
+def MakeNestedCounter2(init=0):
     """ make nested counter, c['k1']['k2'] += 1 """
-    return make_nested_defaultdict2(lambda:init)
+    return MakeNestedDefaultDict2(lambda:init)
 
-def make_nested_defaultdict3(init_func=lambda:0):
+def MakeNestedDefaultDict3(init_func=lambda:0):
     """ make nested defaultdict, d['k1']['k2']['k3'] = something """
     return defaultdict(lambda:defaultdict(lambda:defaultdict(init_func)))
 
-def make_nested_counter3(init=0):
+def MakeNestedCounter3(init=0):
     """ make nested counter, c['k1']['k2']['k3'] += 1 """
-    return make_nested_defaultdict3(lambda:init)
+    return MakeNestedDefaultDict3(lambda:init)
 
-def make_nested_defaultdict4(init_func=lambda:0):
+def MakeNestedDefaultDict4(init_func=lambda:0):
     """ make nested defaultdict, d['k1']['k2']['k3']['k4'] = something """
     return defaultdict(lambda:defaultdict(lambda:defaultdict(lambda:defaultdict(init_func))))
 
-def make_nested_counter4(init=0):
+def MakeNestedCounter4(init=0):
     """ make nested counter, c['k1']['k2']['k3']['k4'] += 1 """
-    return make_nested_defaultdict4(lambda:init)
+    return MakeNestedDefaultDict4(lambda:init)
 
-def defaultdict_to_dict(dd):
+def DefaultDictToDict(dd):
     """ transform defaultdict or nested defaultdict into dict """
     for i in dd:
         di = dd[i]
@@ -209,7 +210,7 @@ def defaultdict_to_dict(dd):
                                     raise TypeError('depth of nested defaultdict is ')
     return dict(dd)
 
-def most_common(d:dict, topn=10)->list:
+def MostCommon(d:dict, topn=10)->list:
     """ List the n most common elements and their counts from the most
         common to the least.  If n is None, then list all element counts """
     if topn is None or topn == 0:
@@ -231,19 +232,19 @@ class TestIteralgos(unittest.TestCase):
     def test_BiMap(self):
         d = [('name1', 'Mike'), ('name2', 'Jerry'), ('tag', 2.4), ('base', (1,2,3))]
         bt = BiMap()
-        bt.from_iter(d)
-        self.assertEqual(bt.get_value('name1'), 'Mike')
-        self.assertEqual(bt.get_key(2.4), 'tag')
+        bt.FromIter(d)
+        self.assertEqual(bt.GetValue('name1'), 'Mike')
+        self.assertEqual(bt.GetKey(2.4), 'tag')
         bt['name3'] = 'Ops'
         self.assertEqual(bt['name3'], 'Ops')
-        bt.update('bingo', 'Cherry')
-        bt.update('Cherry', 'bingo')
+        bt.Update('bingo', 'Cherry')
+        bt.Update('Cherry', 'bingo')
         try:
-            bt.update('tag', 'bingo')
+            bt.Update('tag', 'bingo')
         except ValueError:
             pass
-        self.assertIsNotNone(bt.has_key('base'))
-        self.assertIsNotNone(bt.has_value((1,2,3)))
+        self.assertIsNotNone(bt.HasKey('base'))
+        self.assertIsNotNone(bt.HasValue((1,2,3)))
         self.assertTrue('name1' in bt)
         self.assertTrue('name4' not in bt)
     
@@ -253,38 +254,38 @@ class TestIteralgos(unittest.TestCase):
             sl.append(random.randint(1,100000))
         sl.sort()
         for i in range(100000, 200000):
-            assert sl.binary_search(i) == -1
+            assert sl.BinarySearch(i) == -1
         for i in range(10000):
-            sl.insort(i)
-            sl.insort(i, right=True)
+            sl.Insort(i)
+            sl.Insort(i, right=True)
         tmp = sl[:]
         sl.sort()
         for i in range(100000):
             self.assertEqual(tmp[i], sl[i])
-        s = sl.make_set()
-        d = sl.make_dict(False)
+        s = sl.MakeSet()
+        d = sl.MakeDict(False)
         self.assertTrue(len(s) <= len(d))
-        d = sl.make_dict(True)
+        d = sl.MakeDict(True)
         self.assertTrue(len(s) == len(d))
         self.assertTrue(len(d) <= len(sl))
         
-    def test_dict(self):
-        d4 = make_nested_counter4(0)
+    def test_Dict(self):
+        d4 = MakeNestedCounter4(0)
         d4['go1']['in']['key0']['name1'] += 100
         d4['go2']['in']['key2']['name2'] += 100
         d4['go2']['in']['key2']['name2'] += 100
         d4['go5']['in']['key5']['name4'] += 100
-        d4 = defaultdict_to_dict(d4)
+        d4 = DefaultDictToDict(d4)
         self.assertTrue(isinstance(d4, dict))
         self.assertTrue(isinstance(d4['go1'], dict))
         self.assertTrue(isinstance(d4['go1']['in']['key0'], dict))
         self.assertTrue(d4['go2']['in']['key2']['name2'] == 200)
-        d = make_counter(10)
+        d = MakeCounter(10)
         d[1] += 1
         d[2] += 2
         d[3] += 3
         d[4] += 4
-        self.assertTrue(most_common(d, 2) == [(4, 14), (3, 13)])
+        self.assertTrue(MostCommon(d, 2) == [(4, 14), (3, 13)])
 
 
 if __name__ == '__main__':

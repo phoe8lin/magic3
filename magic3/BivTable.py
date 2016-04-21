@@ -9,7 +9,7 @@ try:
 except Exception:
     raise ImportError('warning: numpy can Not be loaded!\n')
 
-def save_counter_as_csv(c:dict, filename:str, head=[])->int:
+def SaveCounterAsCSV(c:dict, filename:str, head=[])->int:
     """ save counter into a csv file """
     assert filename.endswith('.csv')
     nline = 0
@@ -33,9 +33,7 @@ def save_counter_as_csv(c:dict, filename:str, head=[])->int:
     return nline
 
 
-def read_csv(name:str, delim=',', 
-             withhead=False, strip=True, convert=None, 
-             encoding='utf-8', errors='strict')->([],[]):
+def ReadCSV(name:str, delim=',', withhead=False, strip=True, convert=None,  encoding='utf-8', errors='strict')->([],[]):
     """ read csv file, return head and body as list """
     if convert and strip:
         make = lambda s: convert(s.strip(b'" ').decode(encoding, errors))
@@ -57,8 +55,7 @@ def read_csv(name:str, delim=',',
     return head, body
 
 
-def write_csv(name:str, delim:str, body:list, head:list, 
-              body_format=None, head_format=None)->int:
+def WriteCSV(name:str, delim:str, body:list, head:list, body_format=None, head_format=None)->int:
     """ write data to csv file, note body should be a bivariate table """
     if not head_format:
         head_format = (delim).join(['%s']*len(head)) + '\n'
@@ -95,7 +92,7 @@ def write_csv(name:str, delim:str, body:list, head:list,
 class BivTableBase(object):
     """ Base class of bivariate table """
     def __init__(self, head=[], body=[]):
-        self.check(head, body)
+        self.Check(head, body)
         self.head = head
         self.body = body
 
@@ -107,23 +104,23 @@ class BivTableBase(object):
     def table(self)->list:
         return self.body
     
-    def read(self, *args, **kwargs):
+    def Read(self, *args, **kwargs):
         raise NotImplementedError
     
-    def write(self, *args, **kwargs):
+    def Write(self, *args, **kwargs):
         raise NotImplementedError
     
-    def check(self, *args):
+    def Check(self, *args):
         raise NotImplementedError
     
-    def show(self):
+    def Show(self):
         raise NotImplementedError
     
     def __iter__(self):
         """ body iterator """
         return iter(self.body)
 
-    def reset(self):
+    def Reset(self):
         """ clear and reset all """
         self.head.clear()
         del self.head
@@ -131,18 +128,18 @@ class BivTableBase(object):
         del self.body
         self.head, self.body = [], []
 
-    def matrix(self, deleteRaw=False)->numpy.mat:
+    def Matrix(self, deleteRaw=False)->numpy.mat:
         """ return a numpy matrix object """
         mat = numpy.mat(self.body)
         if deleteRaw:
-            self.reset()
+            self.Reset()
         return mat
 
-    def array(self, deleteRaw=False)->numpy.array:
+    def Array(self, deleteRaw=False)->numpy.array:
         """ return a numpy ndarray object """
         narr = numpy.array(self.body)
         if deleteRaw:
-            self.reset()
+            self.Reset()
         return narr
 
 
@@ -150,26 +147,26 @@ class BivTable(BivTableBase):
     """ Usage: 
         table = BivTable()
         table.read('/home/user/mydata.csv', withhead=1, convert=int)
-        table.show()
+        table.Show()
         mat = table.matrix() """
     def __init__(self, head=[], body=[]):
         super().__init__(head, body)
 
-    def read(self, name, delim=',', withhead=False, strip=False, convert=None, encoding='utf-8'):
+    def Read(self, name, delim=',', withhead=False, strip=False, convert=None, encoding='utf-8'):
         """ read from file, `convert` should be a function like int/str/float/lambda """
-        self.head, self.body = read_csv(name, delim, withhead, strip, convert, encoding)
-        self.check(self.head, self.body)
+        self.head, self.body = ReadCSV(name, delim, withhead, strip, convert, encoding)
+        self.Check(self.head, self.body)
 
-    def check(self, head, body):
+    def Check(self, head, body):
         """ check types """
         if not isinstance(head, (list, tuple)):
             raise TypeError
         if not isinstance(body, (list, tuple, set, numpy.matrix, numpy.ndarray)):
             raise TypeError
 
-    def write(self, name, delim=',', body_format=None, head_format=None):
+    def Write(self, name, delim=',', body_format=None, head_format=None):
         """ write data to csv file """
-        return write_csv(name, delim, self.body, self.head, body_format, head_format)
+        return WriteCSV(name, delim, self.body, self.head, body_format, head_format)
     
     @property
     def shape(self)->tuple:
@@ -178,7 +175,7 @@ class BivTable(BivTableBase):
             assert len(self.head) == len(self.body[0])
         return len(self.body), len(self.body[0])
     
-    def show(self):
+    def Show(self):
         """ print whole table """
         print(', '.join(self.head))
         for row in self.body:
@@ -197,8 +194,8 @@ class CSV(BivTable):
 # Not-Applicable flag
 NAFlag = 'N/A'
 
-def indexed(vec, start, offset=1)->dict:
-    """ indexed an array-like object(list,tuple,etc) by integer, auto increment """
+def Indexed(vec, start, offset=1)->dict:
+    """ Indexed an array-like object(list,tuple,etc) by integer, auto increment """
     assert hasattr(vec, '__iter__')
     assert isinstance(vec, (tuple, list, numpy.ndarray))
     vec = list(set(vec))
@@ -206,7 +203,7 @@ def indexed(vec, start, offset=1)->dict:
     end = len(vec) * 2 + start
     return {k:v for k,v in zip(vec, range(start, end, offset))}
 
-def indexed_by_column(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
+def IndexedByColumn(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
     """[['a', 'b', 'c'],      [[1.  2.  3.]
         ['e', 'a', 'd'],  =>   [3.  1.  2.]
         ['f', 'f', 'b'],       [2.  2.  1.]
@@ -214,14 +211,14 @@ def indexed_by_column(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
     """
     nr, nc = table.shape
     mat = numpy.zeros(shape=(nr, nc), dtype=dtype)
-    dtmp = [indexed(i, start=start) for i in table.T]
+    dtmp = [Indexed(i, start=start) for i in table.T]
     for i in range(nr):
         row = table[i]
         for j in range(nc):
             mat[i, j] = dtmp[j][row[j]] if row[j] != NAFlag else NA
     return mat
 
-def indexed_by_row(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
+def IndexedByRow(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
     """[['a', 'b', 'b'],      [[1.  2.  2.]
         ['e', 'a', 'd'],  =>   [2.  1.  3.]
         ['f', 'f', 'b'],       [3.  4.  1.]
@@ -229,14 +226,14 @@ def indexed_by_row(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
     """
     nr, nc = table.shape
     mat = numpy.zeros(shape=(nr, nc), dtype=dtype)
-    dtmp = [indexed(i, start=start) for i in table]
+    dtmp = [Indexed(i, start=start) for i in table]
     for i in range(nr):
         row = table[i]
         for j in range(nc):
             mat[i, j] = dtmp[i][row[j]] if row[j] != NAFlag else NA
     return mat
 
-def indexed_all(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
+def IndexedAll(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
     d = {}
     n = start
     for row in table:
@@ -252,7 +249,7 @@ def indexed_all(table:CSV, dtype=float, start=1, NA=0)->numpy.mat:
             mat[i, j] = d[row[j]] if row[j] != NAFlag else NA
     return mat
 
-def quantize(arr, mapper, unique=True)->dict:
+def Quantize(arr, mapper, unique=True)->dict:
     """  """
     if unique:
         arr = list(set(arr))
@@ -270,26 +267,26 @@ def test():
             1,2,3,4,5,6,7,8,9,0 
             6,6,6,6,6,6,6,6,6,6"""
     csv = CSV()
-    csv.read(BytesIO(s), withhead=1, convert=int)
-    csv.show()
+    csv.Read(BytesIO(s), withhead=1, convert=int)
+    csv.Show()
     print()
-    csv.read(BytesIO(s), withhead=1, convert=float)
+    csv.Read(BytesIO(s), withhead=1, convert=float)
     try:
-        print(csv.matrix())
+        print(csv.Matrix())
     except:
         pass
-    csv.write('csv.csv', delim=',', body_format=','.join(['%.2f']*10))
+    csv.Write('csv.csv', delim=',', body_format=','.join(['%.2f']*10))
     m = numpy.array([['a','b','c'],
                      ['b','c','d'],
                      ['d','e','f'],
                      ['a','f','c'],
                      ['g','d','e']])
     print()
-    print(indexed_by_row(m))
+    print(IndexedByRow(m))
     print()
-    print(indexed_by_column(m))
+    print(IndexedByColumn(m))
     print()
-    print(indexed_all(m))
+    print(IndexedAll(m))
     print()
 
 

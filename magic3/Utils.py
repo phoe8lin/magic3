@@ -16,9 +16,9 @@ from time import time, strftime, sleep
 PythonVersion = (sys.version_info.major, sys.version_info.minor)
 
 
-def is_valid_ip(ip)->bool:
+def IsValidIP(ip)->bool:
     """ Returns true if the given string is a well-formed IP address(v4/v6) """
-    def from_str(_ip):
+    def FromStr(_ip):
         if not _ip or '\x00' in _ip:
             return False
         try:
@@ -26,18 +26,19 @@ def is_valid_ip(ip)->bool:
             return bool(res)
         except Exception:
             return False
-    def from_int(_ip):
+    def FromInt(_ip):
         try: 
             ip_address(_ip)
             return True
         except ValueError:
             return False
     if isinstance(ip, str): 
-        return from_str(ip)
+        return FromStr(ip)
     elif isinstance(ip, int):  
-        return from_int(ip)
+        return FromInt(ip)
     else: 
-        raise TypeError('is_valid_ip')
+        raise TypeError('IsValidIP')
+
 
 class IPv4Macher:
     pattern = "^\
@@ -49,7 +50,7 @@ class IPv4Macher:
     compiled2 = re.compile(pattern.encode(encoding='utf-8'))
 
 
-def to_bytes(obj:object)->bytes:
+def ToBytes(obj:object)->bytes:
     """ make object to bytes if supports, using `ascii` as defualt encode """
     if isinstance(obj, str):
         try:
@@ -60,7 +61,7 @@ def to_bytes(obj:object)->bytes:
         return obj
     return memoryview(obj).tobytes()
 
-def utf8(s, errors='replace')->str:
+def UTF8(s, errors='replace')->str:
     """ transform s to 'utf-8' coding """ 
     return str(s, 'utf-8', errors=errors)
 
@@ -69,7 +70,7 @@ def MD5(buf:bytes)->str:
     """ get md5 hexdigest of bytes """
     return openssl_md5(buf).hexdigest()
 
-def recursive_encode(s:str, level:int=10)->str:
+def RecursiveEncode(s:str, level:int=10)->str:
     """ recursive encode `s` using base64,
         `level` is depth of recursive, the max value is 32 """
     assert level <= 32
@@ -77,25 +78,25 @@ def recursive_encode(s:str, level:int=10)->str:
         return str(s, 'utf-8')
     if not isinstance(s, (bytearray,bytes)):
         s = bytes(s, 'utf-8')
-    return recursive_encode(b64encode(s), level-1)
+    return RecursiveEncode(b64encode(s), level-1)
 
-def recursive_decode(s:str, level:int=10)->str:
-    """ recursive decode `s`(encoded by `recursive_encode`) using base64,
+def RecursiveDecode(s:str, level:int=10)->str:
+    """ recursive decode `s`(encoded by `RecursiveEncode`) using base64,
         `level` is depth of recursive, the max value is 32 """
     assert level <= 32
     if level <= 0:
         return str(s, 'utf-8')
     if not isinstance(s, (bytearray,bytes)):
         s = bytes(s, 'utf-8')
-    return recursive_decode(b64decode(s), level-1)
+    return RecursiveDecode(b64decode(s), level-1)
 
 
-def load_json(name, objHook=None)->dict:
+def LoadJson(name, objHook=None)->dict:
     """ load json from file return dict """
     with _io.open(name, encoding='utf-8', errors='replace') as f:
         return json.loads(f.read(), encoding='utf-8', object_hook=objHook)
 
-def dump_json(obj:dict, name=None)->str:
+def DumpJson(obj:dict, name=None)->str:
     """ dump json(dict) to file """
     str = json.dumps(obj, indent=4, ensure_ascii=False)
     if name:
@@ -103,7 +104,7 @@ def dump_json(obj:dict, name=None)->str:
             f.write(str)
     return str
 
-def debug(*args, **kwargs):
+def Debug(*args, **kwargs):
     """ print to stderr not stdout """
     ts = time()
     dt = strftime('%F %T') + ('.%03d' % ((ts - int(ts)) * 1000))
@@ -120,34 +121,34 @@ class DummyLock:
     def release(self, *args, **kwargs): pass
 
 
-def isotime():
+def ISOTime():
     """ return iso datetime, like 2014-03-28 19:45:59 """ 
     return strftime('%F %T')
 
-def is_time_point(time_in_24h):
+def IsTimePoint(time_in_24h):
     """ check now is specify time """
     return strftime('%H:%M:%S') == time_in_24h
 
-def wait_until(time_in_24h):
+def WaitUntil(time_in_24h):
     """ return until now is hour:minute:second """
     while True:
         if strftime('%H:%M:%S') == time_in_24h:
             break
         sleep(0.5)
 
-def time_meter(src=os.path.basename(__file__)):
+def TimeMeter(src=os.path.basename(__file__)):
     """ print time when enter wrapped function and leave wrapped function """
     def _wrapper(func):
         @functools.wraps(func)
         def _call(*args, **kwargs):
-            debug(isotime() + (' %s : %s started...' % (src, _call.__name__)))
+            Debug(ISOTime() + (' %s : %s started...' % (src, _call.__name__)))
             ret = func(*args, **kwargs)
-            debug(isotime() + (' %s : %s finished...' % (src, _call.__name__)))
+            Debug(ISOTime() + (' %s : %s finished...' % (src, _call.__name__)))
             return ret
         return _call
     return _wrapper
 
-def print_error(name, output=sys.stderr):
+def PrintError(name, output=sys.stderr):
     """ print exception with extra info(name) and limit traceback in 2 """
     assert name
     assert output is sys.stderr or output is sys.stdout
@@ -161,7 +162,7 @@ class Timer(object):
     """ a simple timer for debug using """
     def __init__(self):
         self.t = time()
-    def reset(self):
+    def Reset(self):
         self.t = time()
     def __str__(self):
         return str(round((time() - self.t), 4))
@@ -171,13 +172,13 @@ class Timer(object):
         return time() - self.t
     def __int__(self):
         return int(time() - self.t)
-    def show(self):
+    def Show(self):
         print(str(self))
 
 
-def singleton(cls, *args, **kw):
-    """ singleton object wrapper, usage:
-        @singleton
+def Singleton(cls, *args, **kw):
+    """ Singleton object wrapper, usage:
+        @Singleton
         class MyClass(object):
             pass
     """
@@ -189,7 +190,7 @@ def singleton(cls, *args, **kw):
     return _object
 
 
-def aio_new_loop(executor=None):
+def AioNewLoop(executor=None):
     """ get new event loop with ThreadPoolExecutor """
     loop = asyncio.new_event_loop()
     if executor:
@@ -198,66 +199,66 @@ def aio_new_loop(executor=None):
         loop.set_default_executor(concurrent.futures.ThreadPoolExecutor())
     return loop
 
-def aio_loop():
+def AioLoop():
     """ get current event loop """
     return asyncio.get_event_loop()
 
-def aio_tasks(*future):
+def AioTasks(*future):
     """ wrap more futures as one waitable future """
     assert isinstance(future, (list, tuple))
     return asyncio.tasks.wait(future);
 
-def aio_run(*future, loop=None):
+def AioRun(*future, loop=None):
     """ run until complete """
     if not loop:
-        loop = aio_loop()
+        loop = AioLoop()
     if len(future) > 1:
-        return loop.run_until_complete(aio_tasks(*future))
+        return loop.run_until_complete(AioTasks(*future))
     else:
         return loop.run_until_complete(future[0])
 
-def aio_to_future(coro, loop=None):
+def AioToFuture(coro, loop=None):
     """ make coroutine to asyncio.Future """
     return asyncio.ensure_future(coro, loop=loop)
 
-def make_aio_thread(new=False, daemon=True, name=None):
+def MakeAioThread(new=False, daemon=True, name=None):
     """ Make a pair of asyncio loop and run_forever thread """
     if new:
-        loop = aio_new_loop()
+        loop = AioNewLoop()
     else:
-        loop = aio_loop()
+        loop = AioLoop()
     aiothread = threading.Thread(target=loop.run_forever, name=name)
     aiothread.daemon = daemon
     aiothread.start()
     return (loop, aiothread)
     
-def aio_call_soon(function, *args, loop=None, **kwargs):
+def AioCallSoon(function, *args, loop=None, **kwargs):
     """ Arrange for a callback to be called as soon as possible
         Callbacks are called in the order in which they are registered
         Each callback will be called exactly once """
     if not loop:
-        loop = aio_loop()
+        loop = AioLoop()
     loop.call_soon(functools.partial(function,  *args, **kwargs))
     
-def aio_call_soon_safe(function, *args, loop=None, **kwargs):
-    """ Like aio_call_soon, but multi threads safe """
+def AioCallSoonSafe(function, *args, loop=None, **kwargs):
+    """ Like AioCallSoon, but multi threads safe """
     if not loop:
-        loop = aio_loop()
+        loop = AioLoop()
     loop.call_soon_threadsafe(functools.partial(function,  *args, **kwargs))
 
-def aio_call_later(delay, function, *args, loop=None, **kwargs):
+def AioCallLater(delay, function, *args, loop=None, **kwargs):
     """ Arrange for a callback to be called at a given time 
         Return a handler with cancel method that can be used to cancel the call 
         The delay can be an int or float in seconds which always relative to the current time """
     if not loop:
-        loop = aio_loop()
+        loop = AioLoop()
     loop.call_later(delay, functools.partial(function,  *args, **kwargs))
 
-def aio_call_at(aiotime, function, *args, loop=None, **kwargs):
+def AioCallAt(aiotime, function, *args, loop=None, **kwargs):
     """ Like call_later(), but uses an absolute time which 
         corresponds to the event loop's time() method """
     if not loop:
-        loop = aio_loop()
+        loop = AioLoop()
     loop.call_at(aiotime, functools.partial(function,  *args, **kwargs))
 
 
@@ -268,9 +269,9 @@ class BomHelper(object):
     __lock__ = threading.Lock()
     def __init__(self, filename, defaultBOM=codecs.BOM_UTF8):
         """ defaultBOM can be specified by user from valid values in codecs """
-        self.reset(filename, defaultBOM)
+        self.Reset(filename, defaultBOM)
 
-    def reset(self, filename, defaultBOM=codecs.BOM_UTF8):
+    def Reset(self, filename, defaultBOM=codecs.BOM_UTF8):
         """ """
         if os.path.getsize(filename) > (1<<30):
             raise RuntimeError('Error: file %s is too large!!!' % self.__name)
@@ -287,11 +288,11 @@ class BomHelper(object):
         with open(self.__name, 'rb') as f:
             return f.read(3) == self.__bom
 
-    def has(self):
+    def Has(self):
         """ check file has BOM or not """
         return self.__sync(self.__has)
 
-    def insert(self):
+    def Insert(self):
         """ add BOM to file, the filesize can Not be larger than 1GB """
         def _insert():
             if self.__has():
@@ -304,7 +305,7 @@ class BomHelper(object):
             return True
         return self.__sync(_insert)
 
-    def remove(self):
+    def Remove(self):
         """ remove BOM from file, the filesize can Not be larger than 1GB """
         def _remove():
             if not self.__has():
@@ -317,47 +318,47 @@ class BomHelper(object):
             return True
         return self.__sync(_remove)
 
-    def value(self):
+    def Value(self):
         """ get default BOM value in bytes """
         return self.__bom
 
 
 def test():
-    assert(is_valid_ip('127.0.0.1'))
-    assert(is_valid_ip('4.4.4.4'))
-    assert(is_valid_ip('192.168.255.0'))
-    assert(is_valid_ip('::1'))
-    assert(is_valid_ip('2620:0:1cfe:face:b00c::3'))
-    assert(not is_valid_ip('www.google.com'))
-    assert(not is_valid_ip('localhost'))
-    assert(not is_valid_ip('[4.4.4.4]'))
-    assert(not is_valid_ip('127.0.0.1.2.3'))
-    assert(not is_valid_ip('123123123123'))
-    assert(not is_valid_ip('\x00\x01\x02\x03'))
-    assert(not is_valid_ip('123.123.321.456'))
-    assert(not is_valid_ip(''))
-    assert(is_time_point(isotime().split()[1]))
-    t = isotime().split()[1]
+    assert(IsValidIP('127.0.0.1'))
+    assert(IsValidIP('4.4.4.4'))
+    assert(IsValidIP('192.168.255.0'))
+    assert(IsValidIP('::1'))
+    assert(IsValidIP('2620:0:1cfe:face:b00c::3'))
+    assert(not IsValidIP('www.google.com'))
+    assert(not IsValidIP('localhost'))
+    assert(not IsValidIP('[4.4.4.4]'))
+    assert(not IsValidIP('127.0.0.1.2.3'))
+    assert(not IsValidIP('123123123123'))
+    assert(not IsValidIP('\x00\x01\x02\x03'))
+    assert(not IsValidIP('123.123.321.456'))
+    assert(not IsValidIP(''))
+    assert(IsTimePoint(ISOTime().split()[1]))
+    t = ISOTime().split()[1]
     sleep(1)
-    assert(not is_time_point(t))
-    j = dump_json({t:'go', 'key':PythonVersion})
+    assert(not IsTimePoint(t))
+    j = DumpJson({t:'go', 'key':PythonVersion})
     d = json.loads(j)
     assert(t in d and 3 in d['key']) 
     assert(MD5(b'abcdef0987654321') == 'eaa1c1d22e330b10903dfdbfed5e6ff9')
-    assert(recursive_decode(recursive_encode('github.com')) == 'github.com')
-    assert(BomHelper(__file__).value() == codecs.BOM_UTF8)
+    assert(RecursiveDecode(RecursiveEncode('github.com')) == 'github.com')
+    assert(BomHelper(__file__).Value() == codecs.BOM_UTF8)
     
     def userfunc(arg, **kwargs):
         d[arg] = kwargs['a']
-    aio_call_soon(userfunc, 111, a=111)
-    aio_call_soon_safe(userfunc, 222, a=222)
-    aio_call_later(1, userfunc, 333, a=333)
-    aio_call_at(aio_loop().time() + 2, userfunc, 444, a=444)
-    loop, aioth = make_aio_thread()
+    AioCallSoon(userfunc, 111, a=111)
+    AioCallSoonSafe(userfunc, 222, a=222)
+    AioCallLater(1, userfunc, 333, a=333)
+    AioCallAt(AioLoop().time() + 2, userfunc, 444, a=444)
+    loop, aioth = MakeAioThread()
     sleep(2)
     for i in range(1,5):
         assert d[i*111] == i*111
-    debug(__file__, ':Test OK')
+    Debug(__file__, ': Test OK')
 
 
 if __name__ == '__main__':

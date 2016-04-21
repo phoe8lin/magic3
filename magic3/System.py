@@ -9,7 +9,7 @@ from subprocess import Popen, PIPE, getstatusoutput
 BEST_RECURSION_LIMIT = 4096
 BEST_CHECK_INTERVAL = 1024
 
-def _set_unexcepted_hook(excepthook):
+def SetUnexceptedHook(excepthook):
     """ set exception hook
         excepthook looks like:
         def user_hook(exctype, value, traceback):
@@ -17,11 +17,11 @@ def _set_unexcepted_hook(excepthook):
     """
     sys.excepthook = excepthook
 
-def get_cpu_count():
+def GetCpuCount():
     """ Return the number of CPUs in the system; return None if indeterminable """
     return os.cpu_count()
 
-def sys_reconfig():
+def SysReConfig():
     """ set global best configs, eg: gc and recursion limit """
     cfg = {}
     cfg['sys.platform'] = sys.platform
@@ -45,36 +45,36 @@ def sys_reconfig():
 class OSCommand(object):
     """ call system command, all methods are staticmethod """
     @staticmethod
-    def call(cmd:str, showcmd=False)->str:
+    def Call(cmd:str, showcmd=False)->str:
         return getstatusoutput(cmd)
     
     @staticmethod
-    def execute(cmd:str, showcmd=False, stdout=PIPE, stderr=PIPE)->bytes:
+    def Execute(cmd:str, showcmd=False, stdout=PIPE, stderr=PIPE)->bytes:
         """ execute system command using Popen and return the result str """
         output = Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
         return output.stdout.read()
 
     @staticmethod
-    def popen(cmd:str, showcmd=False, stdout=PIPE, stderr=PIPE)->Popen:
+    def Popen(cmd:str, showcmd=False, stdout=PIPE, stderr=PIPE)->Popen:
         """ same as execute, but return stdout of pipe """
         return Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
 
     @staticmethod
-    def process_count(keyword:str)->tuple:
+    def ProcessCount(keyword:str)->tuple:
         """ count process specified in `keyword` using 'ps|egrep' system command """
         output = Popen('ps ax | egrep %s' % keyword, shell=True, stdout=PIPE)
         return tuple(line for line in map(lambda l:l.decode('utf-8').rstrip(), output.stdout)
                      if 'egrep '+keyword not in line)
 
     @staticmethod
-    def process_count_extra(keyword:str, exclude:str)->tuple:
+    def ProcessCountExtra(keyword:str, exclude:str)->tuple:
         """ like process_count, but exclude `exclude` word """
         output = Popen('ps ax | egrep %s' % keyword, shell=True, stdout=PIPE)
         return tuple(line for line in map(lambda l:l.decode('utf-8').rstrip(), output.stdout)
                      if 'egrep '+keyword not in line and exclude not in line)
 
     @staticmethod
-    def get_pid(keyword:str)->tuple:
+    def GetPid(keyword:str)->tuple:
         """ getpid """
         output = getstatusoutput('pgrep %s' % keyword)
         return tuple(int(i) for i in output[-1].split('\n'))
@@ -96,50 +96,53 @@ class IOFlusher(Thread):
                 each.flush()
             time.sleep(self._delay)
 
-# the global io flusher
-__gFlusher = IOFlusher()
 
-def run_io_flusher()->bool:
+# the global io flusher
+__GlobalFlusher = IOFlusher()
+
+def RunIOFlusher()->bool:
     """ make global io flusher running, call only once in '__main__' """
-    global __gFlusher
-    if __gFlusher.is_alive():
+    global __GlobalFlusher
+    if __GlobalFlusher.is_alive():
         return False
-    __gFlusher.start()
+    __GlobalFlusher.start()
     return True
 
 
 def test():
     import time, os, pprint
-    r = OSCommand.call('date -u', True)
+    assert RunIOFlusher()
+    r = OSCommand.Call('date -u', True)
     assert r[0] == 0 and r[1]
     print("return code:", r[0], os.strerror(r[0]), '\n')
-    p = OSCommand.popen('locale -v', True)
+    p = OSCommand.Popen('locale -v', True)
     print(p.stdout.read().decode('utf-8'))
     print()
     print('count "python3"')
-    print(OSCommand.process_count('python3'))
+    print(OSCommand.ProcessCount('python3'))
     print()
     print('count "python3" but not "pydev"')
-    print(OSCommand.process_count_extra('python3', 'pydev'))
+    print(OSCommand.ProcessCountExtra('python3', 'pydev'))
     print()
-    print(OSCommand.get_pid('python3'))
+    print(OSCommand.GetPid('python3'))
     print()
+    
     for _ in range(3):
-        print(OSCommand.execute('uptime', True).decode('utf-8'))
-        print(OSCommand.execute('free -mo', True).decode('utf-8'))
+        print(OSCommand.Execute('uptime', True).decode('utf-8'))
+        print(OSCommand.Execute('free -mo', True).decode('utf-8'))
         time.sleep(1.0)
     
     def user_hook(exctype, value, traceback):
         sys.stderr.write('Bingo! %s %s %s\n' % (exctype, value, traceback))
     
-    _set_unexcepted_hook(user_hook)
+    SetUnexceptedHook(user_hook)
     try:
         raise ValueError('Uncatched Error(for test)')
     except:
         pass
-    pprint.pprint(sys_reconfig())
+    pprint.pprint(SysReConfig())
     
-    assert (get_cpu_count() >= 1)
+    assert (GetCpuCount() >= 1)
 
 
 if __name__ == '__main__':

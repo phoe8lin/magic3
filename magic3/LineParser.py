@@ -8,17 +8,17 @@ from os.path import exists
 from _io import open, DEFAULT_BUFFER_SIZE, BytesIO
 from abc import abstractmethod, ABCMeta
 from string import Template
-from magic3.utils import debug
-from magic3.filesystem import user_dir,list_dir
-from magic3.system import OSCommand
+from magic3.Utils import Debug
+from magic3.FileSystem import UserDir,ListDir
+from magic3.System import OSCommand
 
 AWK_CMD = Template("""awk -F "${delim}" '{print ${vargs}}' ${files} 2>&1""")
 bestIOBufferSize = DEFAULT_BUFFER_SIZE << 2
-ONE_GB = (1024*1024*1024)
+TWO_GB = (1024*1024*1024*2)
 
-def open_awk(filelist:list, pos_args:list, delim):
+def OpenAWK(filelist:list, pos_args:list, delim):
     """ call awk command and return an opened pipe for read the output of awk, eg:
-        for line in open_awk([file1, file2], [2,3,4], ',').stdout:
+        for line in OpenAWK([file1, file2], [2,3,4], ',').stdout:
             print(line)   
     """
     if isinstance(delim, (bytes, bytearray)):
@@ -44,26 +44,26 @@ def open_awk(filelist:list, pos_args:list, delim):
         print(cmd)
     return OSCommand.popen(cmd)
 
-def read_from_awk(filelist:list, pos_args:list, delim=' ')->iter:
+def ReadFromAWK(filelist:list, pos_args:list, delim=' ')->iter:
     """ call awk command and return an iterator for reading the output of awk """
-    reader = open_awk(filelist, pos_args, delim).stdout
+    reader = OpenAWK(filelist, pos_args, delim).stdout
     if reader.readable() and not reader.closed:
         return iter(reader)
     else:
-        raise RuntimeError('open_awk failed')
+        raise RuntimeError('OpenAWK failed')
 
-def read_from_awk_with_callback(callback, filelist:list, pos_args:list, delim=' ')->iter:
+def ReadFromAWKWithCallback(callback, filelist:list, pos_args:list, delim=' ')->iter:
     """ call awk command and return an iterator of callback's return for each line in output """
-    reader = open_awk(filelist, pos_args, delim).stdout
+    reader = OpenAWK(filelist, pos_args, delim).stdout
     if reader.readable() and not reader.closed:
         return map(callback, reader)
     else:
-        raise RuntimeError('open_awk failed')
+        raise RuntimeError('OpenAWK failed')
 
-def open_as_byte_stream(filename):
-    """ if filesize < ONE_GB, read whole file as BytesIO object """
+def OpenAsByteStream(filename):
+    """ if filesize < TWO_GB, read whole file as BytesIO object """
     filesize = os.path.getsize(filename)
-    if filesize < ONE_GB:
+    if filesize < TWO_GB:
         with open(filename, 'rb') as f:
             return BytesIO(f.read(filesize))
     else:
@@ -71,31 +71,31 @@ def open_as_byte_stream(filename):
 
 
 class LineParserBase(metaclass=ABCMeta):
-    """ inherit this class and implement `run` and `parse_line` method """
+    """ inherit this class and implement `Run` and `parse_line` method """
     def __init__(self, filenames=[], filedir='', namefilter='.*'):
         self._files = filenames if filenames else []
         self._dir = filedir
         self._filter = re.compile(namefilter)
-        self.check_args()
+        self.CheckArgs()
     
-    def check_args(self):
+    def CheckArgs(self):
         if self._dir and not isinstance(self._dir, str):
             raise TypeError
-        if self._dir and not self._dir.startswith(user_dir()):
-            self._dir = user_dir() + self._dir.lstrip(os.sep)
+        if self._dir and not self._dir.startswith(UserDir()):
+            self._dir = UserDir() + self._dir.lstrip(os.sep)
         if self._files and not isinstance(self._files, (list, tuple, set)):
             raise TypeError
         if not self._dir and not self._files:
             raise ValueError
         if self._dir:
-            tmp = [fn for fn in list_dir(self._dir, lambda s:self._filter.match(s))]
+            tmp = [fn for fn in ListDir(self._dir, lambda s:self._filter.match(s))]
         else:
             tmp = []
         tmp.extend(fn for fn in self._files if self._filter.match(fn))
         self._files = tuple(tmp)
         return self._files
 
-    def read(self, fn, mode='rb', encoding='utf-8-sig', errors='replace'):
+    def Read(self, fn, mode='rb', encoding='utf-8-sig', errors='replace'):
         bufsize = bestIOBufferSize
         parser_ = self.parse_line
         if 'b' in mode:
@@ -105,18 +105,18 @@ class LineParserBase(metaclass=ABCMeta):
             for line in open(fn, mode, buffering=bufsize, encoding=encoding, errors=errors):
                 parser_(line.rstrip())
     
-    def read_all(self, mode='rb', encoding='utf-8-sig'):
+    def ReadAll(self, mode='rb', encoding='utf-8-sig'):
         for each in self._files:
             if __debug__:
-                debug(each)
-            self.read(each, mode, encoding)
+                Debug(each)
+            self.Read(each, mode, encoding)
     
     @abstractmethod
     def parse_line(self, line):
         raise NotImplementedError('inherit this method in subclasses!')
     
-    def run(self):
-        self.read_all()
+    def Run(self):
+        self.ReadAll()
 
 
 class AWKLineParserBase(LineParserBase):
@@ -128,26 +128,26 @@ class AWKLineParserBase(LineParserBase):
         self._fields = None
         self._delim = None
 
-    def read(self, fn):
+    def Read(self, fn):
         delimb = bytes(self._delim, 'utf-8')
         parser_ = self.parse_line
-        for line in read_from_awk([fn], self._fields, self._delim):
+        for line in ReadFromAWK([fn], self._fields, self._delim):
             parser_(line.rstrip().split(delimb))
 
     @abstractmethod
     def parse_line(self, seps:list):
         raise NotImplementedError('inherit this method in subclasses!')
 
-    def read_all(self):
+    def ReadAll(self):
         for each in self._files:
             if __debug__:
-                debug(each)
-            self.read(each)
+                Debug(each)
+            self.Read(each)
 
-    def run(self, fields:list, delim:str=' '):
+    def Run(self, fields:list, delim:str=' '):
         self._fields = tuple(fields)
         self._delim = delim
-        self.read_all()
+        self.ReadAll()
 
 
 def test():
@@ -168,14 +168,14 @@ def test():
             self.count += len(words)
 
     p1 = Parser(__file__)
-    p1.run()
+    p1.Run()
     print(p1.count)
     p2 = AWKParser(__file__)
-    p2.run([3,4,5,6])
+    p2.Run([3,4,5,6])
     print(p2.count)
 
     d = {}
-    for line in read_from_awk([__file__, __file__, __file__], [2, 3]):
+    for line in ReadFromAWK([__file__, __file__, __file__], [2, 3]):
         for s in line.split():
             try: d[s] += 1
             except: d[s] = 1

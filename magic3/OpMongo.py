@@ -46,30 +46,30 @@ class OpMongo(object):
         if self._mc:
             self._mc.close()
     
-    def list_collections(self):
+    def ListCollections(self):
         """ return collection names current """
         assert self._db
         return deepcopy(self._db.collection_names())
     
-    def choose(self, collname):
+    def Choose(self, collname):
         """ select another collection """
         assert isinstance(collname, str)
         self._collection = self._db[str(collname)]
     
-    def info(self):
+    def Info(self):
         """ get infos of collection """
         s = 'connected to: %s\nchosen collection: %s\n'
         if self._collection.count(): 
             s += 'Warning : %s is Not Empty !!!' % self._collection.full_name
         return s % (str(self._db), self._collection.full_name)
     
-    def remove(self):
+    def Remove(self):
         """ remove collection, this is dangerous!!! """
         if self._collection.count():
             self._collection.remove()
             sys.stderr.write('warning: %s removed!\n' % self._collection.full_name) 
     
-    def execute(self, javascript, *args):
+    def Execute(self, javascript, *args):
         """ execute `javascript` with optional `args`, low level """
         result = self._db.command('$eval', 
                                   bson.code.Code(javascript),
@@ -77,16 +77,16 @@ class OpMongo(object):
                                   args = args)
         return result.get('retval', None)
     
-    def update(self, spec, doc, upsert = False):
+    def Update(self, spec, doc, upsert = False):
         """ update or insert(upsert) specified by `spec` with doc """
         return self._collection.update(spec, doc, upsert = upsert)
     
-    def insert(self, docs, fsync = False)->object:
+    def Insert(self, docs, fsync = False)->object:
         """ insert doc, if fsync is True, will be very very slow! """
         objects_id = self._collection.insert(docs, fsync)
         return objects_id
     
-    def insert_no_exception(self, docs, fsync = False)->object:
+    def InsertNoException(self, docs, fsync = False)->object:
         """ insert doc, if fsync is True, will be very very slow! """
         try:
             objects_id = self._collection.insert(docs, fsync)
@@ -94,26 +94,26 @@ class OpMongo(object):
         except Exception as e:
             return e
     
-    def count(self)->int:
+    def Count(self)->int:
         """ count of current collection """
         return self._collection.count()
     
-    def create_indexes(self, indexlist, unique=False)->list:
+    def CreateIndexes(self, indexlist, unique=False)->list:
         """ create indexes(means not only one) on current collection if enable """ 
         if not isinstance(indexlist, (list, tuple, set)):
             raise TypeError('indexlist shoule be list/tuple/set')
         return [self._collection.create_index(i, unique=unique) for i in indexlist]
     
-    def find_one(self, query)->'cursor':
+    def FindOne(self, query)->'cursor':
         """ query and return only one doc if found """
         cursor = self._collection.find_one(query)
         return cursor
     
-    def explain(self, cursor)->str:
+    def Explain(self, cursor)->str:
         """ explain """
         return cursor.explain()
     
-    def find(self, query = {}, sortkey = None, reverse = True, explain = False):
+    def Find(self, query = {}, sortkey = None, reverse = True, explain = False):
         """ find doc specified by `query`, if `sortkey`, sort result """
         cursor = self._collection.find(query)
         if explain:
@@ -122,12 +122,12 @@ class OpMongo(object):
             cursor.sort(sortkey, pymongo.DESCENDING if reverse else pymongo.ASCENDING)
         return cursor
     
-    def find_field(self, query, fields:list):
+    def FindField(self, query, fields:list):
         """ find doc specified by `query`, if `sortkey`, sort result """
         cursor = self._collection.find(query, fields)
         return cursor
 
-    def distinct(self, key):
+    def Distinct(self, key):
         return self._collection.distinct(key)
 
 
@@ -139,12 +139,12 @@ class OpMongoDict(object):
         self.__cfg = kwargs
         self.__mcd = dict()
     
-    def remove(self, name):
+    def Remove(self, name):
         """ name is the key for dict """
         mc = self.__mcd.pop(name)
         del mc
     
-    def add(self, name):
+    def Add(self, name):
         """ add a new client """
         if name in self.__mcd:
             raise ValueError(name + ' is already existed!')
@@ -168,16 +168,16 @@ def test():
     }
     
     mcd = OpMongoDict(**cfg)
-    mcd.add('mydb1')
-    mcd.add('mydb2')
-    mcd.add('mydb3')
-    colls = mcd['mydb1'].list_collections()
+    mcd.Add('mydb1')
+    mcd.Add('mydb2')
+    mcd.Add('mydb3')
+    colls = mcd['mydb1'].ListCollections()
     print(colls)
     
-    mcd['mydb2'].choose(colls[0])
-    for doc in mcd['mydb2'].find({}):
+    mcd['mydb2'].Choose(colls[0])
+    for doc in mcd['mydb2'].Find({}):
         print(doc)
-    print(mcd['mydb3'].execute("db.getName()"))
+    print(mcd['mydb3'].Execute("db.getName()"))
 
 
 if __name__ == '__main__':

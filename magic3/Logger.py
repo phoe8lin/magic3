@@ -4,7 +4,7 @@
 import logging, os, sys
 import traceback, inspect
 from threading import Lock
-from magic3.utils import singleton, DummyLock
+from magic3.Utils import Singleton, DummyLock
 
 def _caller(depth = 1):
     ''' get caller of current frame '''
@@ -17,9 +17,9 @@ def _caller(depth = 1):
         return '[%s] ' % inspect.getframeinfo(inspect.currentframe()).function
 
 
-@singleton
+@Singleton
 class Logger(object):
-    """ A singleton logger depends on logging module, usage:
+    """ A Singleton logger depends on logging module, usage:
         log = Logger('/var/project/yourname.log')
         log('some message')  # default level is INFO
         log.error('error happened!')
@@ -33,7 +33,7 @@ class Logger(object):
     def __init__(self, logfile, append=True, locktype=DummyLock):
         """ make sure logfile's path is existed and valid """
         self.__logfile = logfile
-        self.__nlevel = {'debug':0, 'info':0, 'warn':0, 'error':0, 'fatal':0}
+        self.__nlevel = {'DEBUG':0, 'INFO':0, 'WARN':0, 'ERROR':0, 'FATAL':0}
         self.__nlines = 0
         self.__lock = locktype()
         self.mode = 'a' if append else 'w'
@@ -45,25 +45,32 @@ class Logger(object):
                             level=self.level,
                             datefmt=self.dtfmt,
                             format=self.msgfmt)
-        self.__log = { 'debug' : logging.debug,
-                       'info'  : logging.info,
-                       'warn'  : logging.warn,
-                       'error' : logging.error,
-                       'fatal' : logging.fatal }
+        self.__log = { 'DEBUG' : logging.debug,
+                       'INFO'  : logging.info,
+                       'WARN'  : logging.warn,
+                       'ERROR' : logging.error,
+                       'FATAL' : logging.fatal }
+        self.INFO = self.info
+        self.DEBUG = self.debug
+        self.WARN = self.warn
+        self.ERROR = self.error
+        self.FATAL = self.fatal
 
     def __del__(self):
         """ not nessesary """
         logging.shutdown()
     
-    def check(self)->bool:
+    def Check(self)->bool:
         """ check logfile exists or not """
         return os.path.exists(self.__logfile);
     
-    def filename(self)->str:
+    @property
+    def name(self)->str:
         """ return real path of logfile """
         return os.path.realpath(self.__logfile)
     
-    def filesize(self)->int:
+    @property
+    def size(self)->int:
         """ return size in byte of logfile """
         return os.path.getsize(self.__logfile)
 
@@ -88,40 +95,41 @@ class Logger(object):
         finally:
             self.__lock.release()
 
-    def record(self, dictargs):
+    def Record(self, dictargs):
         """ multi record """
         for msg, lv in dictargs.items():
             self.__call__(msg, level=lv, tb=_caller(1))
 
     def debug(self, *messages):
-        self.__call__(*messages, level='debug', tb=_caller(1))
+        self.__call__(*messages, level='DEBUG', tb=_caller(1))
 
     def info(self, *messages):
-        self.__call__(*messages, level='info', tb=_caller(1))
+        self.__call__(*messages, level='INFO', tb=_caller(1))
     
     def warn(self, *messages):
-        self.__call__(*messages, level='warn', tb=_caller(1))
+        self.__call__(*messages, level='WARN', tb=_caller(1))
         
     def error(self, *messages):
-        self.__call__(*messages, level='error', tb=_caller(1))
+        self.__call__(*messages, level='ERROR', tb=_caller(1))
         
     def fatal(self, *messages):
-        self.__call__(*messages, level='fatal', tb=_caller(1))
+        self.__call__(*messages, level='FATAL', tb=_caller(1))
     
-    def current_lines(self)->int:
+    def CurrentLines(self)->int:
         """ get number lines in current log file """ 
         return self.__nlines
     
-    def current_levels(self)->dict:
+    def CurrentLevels(self)->dict:
         """ get number levels in current log file """ 
         return self.__nlevel.copy()
 
+    
 
 def test():
     """ test for Logger """
     log = Logger(os.path.expanduser('~') + os.sep + 'test.log')
-    log.check()
-    print('log file : %s' % log.filename())
+    log.Check()
+    print('log file : %s' % log.name)
     INFO = log.info
     WARN = log.warn
     ERROR = log.error
@@ -138,9 +146,9 @@ def test():
     INFO({'the first':'info', 'the second':'info'})
     FATAL('fuck!!!')
     INFO('log test finish...')
-    print('log lines:', log.current_lines())
-    print('log levels:', log.current_levels())
-    print('log file size : %.3fKB' % (log.filesize() / 1024))
+    print('log lines:', log.CurrentLines())
+    print('log levels:', log.CurrentLevels())
+    print('log file size : %.3fKB' % (log.size / 1024))
 
 
 if __name__ == '__main__':

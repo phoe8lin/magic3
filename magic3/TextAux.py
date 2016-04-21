@@ -24,7 +24,7 @@ except ImportError:
         'default': PyTemplate
     }
 
-def make_template(string, engine='python'):
+def MakeTemplate(string, engine='python'):
     """ make string to template object """
     return templateFactory[engine](string)
 
@@ -100,10 +100,10 @@ python3Header = '#!/usr/bin/env python3\n# -*- coding:utf-8 -*-\n'
 python2Header = '#!/usr/bin/env python\n# -*- coding:utf-8 -*-\n'
 
 # awk command template
-awkTemplate = make_template("""awk -F "${delim}" '{print ${vargs}}' ${files} 2>&1""")
+awkTemplate = MakeTemplate("""awk -F "${delim}" '{print ${vargs}}' ${files} 2>&1""")
 
 # key-value template
-kvTemplate = make_template("""${k},${v}\n""")
+kvTemplate = MakeTemplate("""${k},${v}\n""")
 
 
 # TODO: make a full unittest

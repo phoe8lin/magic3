@@ -16,49 +16,49 @@ class URLMacher:
     compiled = re.compile(pattern, re.S)
     compiled2 = re.compile(pattern2, re.S)
 
-def extract_url_from_text(text:'str or bytes')->frozenset:
+def ExtractURLFromText(text:'str or bytes')->frozenset:
     """ extract all url unduplicate in text """
     if isinstance(text, str):
         return set(i.group(0) for i in list(URLMacher.compiled.finditer(text)))
     elif isinstance(text, bytes):
         return set(i.group(0) for i in list(URLMacher.compiled2.finditer(text)))
-    raise ValueError('extract_url_from_text')
+    raise ValueError('ExtractURLFromText')
 
-def add_http(uri):
+def AddHttp(uri):
     """ add 'http://' prefix to url """
     return uri if uri[:7] == 'http://' else 'http://' + uri
 
-def add_http2(uri):
+def AddHttp2(uri):
     """ add 'http://' prefix to url """
     return uri if uri[:7] == b'http://' else b'http://' + uri
 
-def trim_http(uri):
+def TrimHttp(uri):
     """ strip 'http://' prefix to url """
     return uri if uri[:7] != 'http://' else uri[7:]
 
-def trim_http2(uri):
+def TrimHttp2(uri):
     """ strip 'http://' prefix to url """
     return uri if uri[:7] != b'http://' else uri[7:]
 
-def url_path(url:str)->str:
+def URLPath(url:str)->str:
     """ get url's path(strip params) """
     return url.split('?', 1)[0]
 
-def url_path2(url:bytes)->bytes:
+def URLPath2(url:bytes)->bytes:
     """ get url's path(strip params) """
     return url.split(b'?', 1)[0]
 
-def url_host(url:str)->str:
+def URLHost(url:str)->str:
     """ get url's host(domain name) """
-    return trim_http(url).split('/', 1)[0]
+    return TrimHttp(url).split('/', 1)[0]
 
-def url_host2(url:bytes)->bytes:
+def URLHost2(url:bytes)->bytes:
     """ get url's host(domain name) """
-    return trim_http2(url).split(b'/', 1)[0]
+    return TrimHttp2(url).split(b'/', 1)[0]
 
-def url_split(url:str)->(str,str,str):
+def URLSplit(url:str)->(str,str,str):
     """ split `url` to 3 part: raw url, url without params, url domain """
-    url = trim_http(url)
+    url = TrimHttp(url)
     seps = url.split('?', 1)
     host = seps[0].split('/', 1)[0]
     if len(seps) > 1:
@@ -66,9 +66,9 @@ def url_split(url:str)->(str,str,str):
     else:
         return host, seps[0], ''
 
-def url_split2(url:bytes)->(bytes,bytes,bytes):
+def URLSplit2(url:bytes)->(bytes,bytes,bytes):
     """ split `url` to 3 part: raw url, url without params, url domain """
-    url = trim_http2(url)
+    url = TrimHttp2(url)
     seps = url.split(b'?', 1)
     host = seps[0].split(b'/', 1)[0]
     if len(seps) > 1:
@@ -76,7 +76,7 @@ def url_split2(url:bytes)->(bytes,bytes,bytes):
     else:
         return host, seps[0], b''
 
-def unquote(s, errors='strict')->str:
+def UnQuote(s, errors='strict')->str:
     """ unquote url or others strictly, try step:
         first  'utf-8'
         second 'gbk'
@@ -103,11 +103,11 @@ class URLString(str):
         self.solver = Resolver()
     
     @classmethod
-    def config_solver(cls, solver_type='tornado.netutil.BlockingResolver'):
+    def ConfigSolver(cls, solver_type='tornado.netutil.BlockingResolver'):
         Resolver.configure(solver_type)
 
     @property
-    def resolved(self)->list:
+    def Resolved(self)->list:
         """ DNS resolve """
         return self.solver.resolve(self.parsed.netloc, port=80).result()
     
@@ -131,20 +131,20 @@ class URLString(str):
         return self.parsed.__getattribute__(attr)
 
 
-def test(url):
-    assert(b'www.baidu.com' == url_host2(url))
-    assert(b'http://www.baidu.com/s' == url_path2(url))
-    h, p, q = url_split2(url)
+def test():
+    assert(b'www.baidu.com' == URLHost2(b'www.baidu.com'))
+    assert(b'http://www.baidu.com/s' == URLPath2(b'http://www.baidu.com/s'))
+    h, p, q = URLSplit2(b'www.baidu.com/s?ie=utf-8&wd=123')
     assert(b'ie=utf-8&wd=123' == q)
-    text = """<html>
-    <p>URL</p><p>URL</p><p>URL</p>
-    </html>""".replace('URL', url.decode('utf-8'))
-    for url in extract_url_from_text(text):
+    text = b"""<html>
+    <p>URL</p><p> http://www.sina.com.cn </p><p>URL</p>
+    </html>"""
+    for url in ExtractURLFromText(text):
         print(url)
-        s = URLString(url)
-        print(s.resolved[0], s.scheme)
+        s = URLString(url.decode())
+        print(s.Resolved[0], s.scheme)
     print('OK')
 
 if __name__ == '__main__':
-    test(b'http://www.baidu.com/s?ie=utf-8&wd=123')
+    test()
 
