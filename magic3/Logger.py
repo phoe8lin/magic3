@@ -74,7 +74,7 @@ class Logger(object):
         """ return size in byte of logfile """
         return os.path.getsize(self.__logfile)
 
-    def __call__(self, *messages, level = 'info', tb = ''):
+    def __call__(self, *messages, level = 'INFO', tb = ''):
         """ logging messages to logfile under level given """
         try:
             self.__lock.acquire()
