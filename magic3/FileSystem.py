@@ -34,6 +34,14 @@ def GrandsireDir(fn):
     """ return grand father directory of existed filename """
     return ParentDir(ParentDir(fn))
 
+def Basename(fn):
+    """ return base name of filename """
+    return os.path.basename(os.path.realpath(fn))
+
+def Dirname(fn):
+    """ return directory name of filename with os.sep """
+    return os.path.dirname(os.path.realpath(fn)) + os.sep
+
 def CMAFileTime(fn):
     """ get file time : ctime, mtime, atime """
     assert os.path.exists(fn)
