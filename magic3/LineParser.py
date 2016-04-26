@@ -2,14 +2,13 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # date   : 2015.06.06
-import os
-import re
-from os.path import exists
+import os, re, math
 from _io import open, DEFAULT_BUFFER_SIZE, BytesIO
 from abc import abstractmethod, ABCMeta
+from os.path import exists
 from string import Template
 from magic3.Utils import Debug
-from magic3.FileSystem import UserDir,ListDir
+from magic3.FileSystem import UserDir,ListDir,PathSpliter
 from magic3.System import OSCommand
 
 AWK_CMD = Template("""awk -F "${delim}" '{print ${vargs}}' ${files} 2>&1""")
@@ -42,7 +41,7 @@ def OpenAWK(filelist:list, pos_args:list, delim):
                                   files = ' '.join(filelist))
     if __debug__:
         print(cmd)
-    return OSCommand.popen(cmd)
+    return OSCommand.Popen(cmd)
 
 def ReadFromAWK(filelist:list, pos_args:list, delim=' ')->iter:
     """ call awk command and return an iterator for reading the output of awk """
@@ -150,6 +149,100 @@ class AWKLineParserBase(LineParserBase):
         self.ReadAll()
 
 
+def FileCount(textfile:str)->tuple:
+    """ count lines, words, bytes in text file """
+    err, ret = OSCommand.Call('wc ' + textfile, False)
+    if err:
+        raise RuntimeError(os.strerror(err))
+    if ret:
+        nline, nword, nbyte, _ = ret.split()
+    return int(nline), int(nword), int(nbyte)
+
+
+class FileSpliter(object):
+    """ split text file in different ways """
+    def __init__(self, filename):
+        """  """
+        assert exists(filename)
+        self._fname = filename
+        self._nbyte = 0
+        self._nword = 0
+        self._nline = 0
+        ps = PathSpliter(self._fname)
+        self._basename = ps.basename
+        self._dirname = ps.dirname
+        self.Count()
+
+    def Count(self):
+        """ same as FileCount """
+        if self._nline:
+            return self._nline, self._nword, self._nbyte
+        else:
+            self._nline, self._nword, self._nbyte = FileCount(self._fname)
+        return self._nline, self._nword, self._nbyte
+
+    def SplitedNames(self, nfile):
+        """ get result file names """
+        if '.' in self._basename:
+            ext = '.' + self._basename.split('.')[-1]
+            newname = self._dirname + self._basename.replace(ext, '-%s' + ext)
+        else:
+            newname = self._dirname + '-%s'
+        return [newname % (i+1) for i in range(nfile)]
+
+    def __howmany(self, m, n):
+        """ a little magic to ensure how many file created """
+        if n >= m:
+            return 2
+        else:
+            n = (m + 1) // n
+        if not (m % n):
+            return n
+        else:
+            return n + 1
+
+    def SplitByLines(self, nline:int):
+        """ split by every `nline` lines """
+        nfile = self.__howmany(self._nline, nline)
+        newnames = self.SplitedNames(nfile)
+        inames = iter(newnames)
+        fout = open(next(inames), 'wb')
+        n = 1
+        with OpenAsByteStream(self._fname) as stream:
+            for line in stream:
+                if not (n % nline):
+                    fout.close()
+                    fout = open(next(inames), 'wb')
+                n += 1
+                fout.write(line)
+            fout.close()
+        return newnames
+
+    def SplitBySize(self, nbyte:int):
+        """ split by every `nbyte` bytes """
+        nfile = self.__howmany(self._nbyte, nbyte)
+        newnames = self.SplitedNames(nfile)
+        inames = iter(newnames)
+        with OpenAsByteStream(self._fname) as stream:
+            buf = stream.read(nbyte)
+            while buf:
+                fout = open(next(inames), 'wb')
+                fout.write(buf)
+                fout.close()
+                buf = stream.read(nbyte)
+        return newnames
+
+    def SplitN(self, num:int):
+        """ split into `num` files """
+        nfile = num
+        nbyte = int(math.ceil((self._nbyte + 1.0) / nfile))
+        return self.SplitBySize(nbyte)
+
+    def SplitByWords(self, nword:int):
+        """ implemnet in futrue ... """
+        raise NotImplementedError
+
+
 def test():
     class Parser(LineParserBase):
         def __init__(self, name):
@@ -181,11 +274,15 @@ def test():
             except: d[s] = 1
     for k, v in d.items():
         assert v >= 3
+    fspliter = FileSpliter(__file__)
+    ret = fspliter.SplitBySize(1000)
+    print(ret)
+    for fn in ret:
+        os.system('unlink ' + fn)
     print('test OK')
 
 
 if __name__ == '__main__':
     test()
-
 
 

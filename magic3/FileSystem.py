@@ -60,12 +60,17 @@ class PathSpliter(object):
     
     def __str__(self)->str:
         return self._fname
-    
+
     @property
     def exist(self)->bool:
         """ check exist or not """
         return os.path.exists(self._fname)
-    
+
+    @property
+    def dirname(self)->bool:
+        """ check exist or not """
+        return os.path.dirname(os.path.realpath(self._fname)) + os.sep
+        
     @property
     def basename(self)->str:
         """ get basename of the filename """
@@ -157,7 +162,7 @@ def test(path):
     print(ps.UpDir(1))
     print(ps.UpDir(2))
     print(ps.UpDir(3))
-    print(ps.exist)
+    print(ps.exist, ps.dirname, ps.basename)
     print(ps[0])
     print(ps[1])
     print(ps[2])
