@@ -11,6 +11,7 @@ from _hashlib import openssl_md5
 from base64 import b64encode, b64decode
 from ipaddress import ip_address
 from time import time, strftime, sleep
+from datetime import datetime, date
 
 # get python version tuple like (3, 4)
 PythonVersion = (sys.version_info.major, sys.version_info.minor)
@@ -323,6 +324,103 @@ class BomHelper(object):
         return self.__bom
 
 
+# For indexing readable weekday strings
+_weekdays = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
+_weekdays_zh = ('星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日')
+_isoweekdays = (None, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
+
+def MakeCalendar(year=None):
+    """ Return a list contains all days datetime object with weekday in the `year` """
+    if not year:
+        year = datetime.today().year
+    cal = [None]
+    for i in range(1, 13):
+        month = [(None, None)]
+        for j in range(1, 32):
+            try:
+                dt = date(year, i, j)
+                month.append((dt, _weekdays[dt.weekday()]))
+            except ValueError:
+                pass
+        cal.append(month)
+    return cal
+
+def MakeWeektable(year=None):
+    """ Return a table of collected days on each weeks in a year(always 52 weeks) """
+    if not year:
+        year = datetime.today().year
+    cal = MakeCalendar(year)
+    wdt = {}
+    if cal[1][1][1] == 'Monday': 
+        num = 0
+    else:
+        num = 1
+    for m in cal[1:]:
+        for d, w in m:
+            if not d:
+                continue
+            if w == 'Monday':
+                num += 1
+            wdt[d] = num
+    return wdt
+
+def DateDelta(y1, m1, d1, y2, m2, d2):
+    """ Return timedelta object of two date, eg:
+        d = DateDelta(2015, 3, 2, 2016, 3, 2)
+    """
+    y1, m1, d1 = int(y1), int(m1), int(d1)
+    y2, m2, d2 = int(y2), int(m2), int(d2)
+    d1 = datetime(y1, m1, d1, 0, 0, 0)
+    d2 = datetime(y2, m2, d2, 0, 0, 0)
+    return d2 - d1 if d2 > d1 else d1 - d2
+
+def TimeDelta(H1, M1, S1, H2, M2, S2):
+    """ Return timedelta object of two time, eg:
+        d = TimeDelta(22, 33, 44, 23, 59, 0)
+    """
+    H1, M1, S1 = int(H1), int(M1), int(S1)
+    H2, M2, S2 = int(H2), int(M2), int(S2)
+    d1 = datetime(1970, 1, 1, H1, M1, S1)
+    d2 = datetime(1970, 1, 1, H2, M2, S2)
+    return d2 - d1 if d2 > d1 else d1 - d2
+
+def DateTimeDelta(y1, m1, d1, H1, M1, S1, y2, m2, d2, H2, M2, S2):
+    """ Return timedelta object of two datetime """
+    y1, m1, d1, H1, M1, S1 = int(y1), int(m1), int(d1), int(H1), int(M1), int(S1)
+    y2, m2, d2, H2, M2, S2 = int(y2), int(m2), int(d2), int(H2), int(M2), int(S2)
+    d1 = datetime(y1, m1, d1, H1, M1, S1)
+    d2 = datetime(y2, m2, d2, H2, M2, S2)
+    return d2 - d1 if d2 > d1 else d1 - d2
+
+
+class WeekDayUtil:
+    """ Utils for datetime operations on weekdays, see test below """
+    weekdays = _weekdays
+    weekdays_zhmap = dict(zip(_weekdays, _weekdays_zh))
+    isoweekdays = _isoweekdays
+    calendar = MakeCalendar()
+    weektable = MakeWeektable()
+    
+    @staticmethod
+    def FirstSomeday(month, weekday='Monday'):
+        """ Get first Monday of the month """
+        assert weekday in _weekdays
+        cal = WeekDayUtil.calendar
+        return next(filter(lambda _:_[1] == weekday, cal[month]))[0]
+    
+    @staticmethod
+    def AllSomedays(month, weekday='Monday'):
+        """ Get all specified weekdays of the month """
+        assert weekday in _weekdays
+        cal = WeekDayUtil.calendar
+        return list(t[0] for t in filter(lambda _:_[1] == weekday, cal[month]))
+
+    @staticmethod
+    def Reset(year):
+        WeekDayUtil.calendar = MakeCalendar(year)
+        WeekDayUtil.weektable = MakeWeektable(year)
+
+
 def test():
     assert(IsValidIP('127.0.0.1'))
     assert(IsValidIP('4.4.4.4'))
@@ -337,6 +435,7 @@ def test():
     assert(not IsValidIP('\x00\x01\x02\x03'))
     assert(not IsValidIP('123.123.321.456'))
     assert(not IsValidIP(''))
+    
     assert(IsTimePoint(ISOTime().split()[1]))
     t = ISOTime().split()[1]
     sleep(1)
@@ -347,6 +446,16 @@ def test():
     assert(MD5(b'abcdef0987654321') == 'eaa1c1d22e330b10903dfdbfed5e6ff9')
     assert(RecursiveDecode(RecursiveEncode('github.com')) == 'github.com')
     assert(BomHelper(__file__).Value() == codecs.BOM_UTF8)
+    
+    print(DateDelta(2015, 1, 1, 2014, 1, 1))
+    print(TimeDelta(21, 30, 0, 22, 0, 0))
+    print(DateTimeDelta(2015, 5, 2, 0, 30, 30, 2015, 5, 12, 12, 30, 30))
+    print(WeekDayUtil.FirstSomeday(5, 'Monday'))
+    print(WeekDayUtil.AllSomedays(5, 'Sunday'))
+    WeekDayUtil.Reset(2017)
+    print(WeekDayUtil.FirstSomeday(1, 'Monday'))
+    print(WeekDayUtil.AllSomedays(1, 'Sunday'))
+    print(WeekDayUtil.weekdays_zhmap)
     
     def userfunc(arg, **kwargs):
         d[arg] = kwargs['a']
@@ -363,5 +472,4 @@ def test():
 
 if __name__ == '__main__':
     test()
-
 
