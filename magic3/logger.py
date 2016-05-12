@@ -4,7 +4,7 @@
 import logging, os, sys
 import traceback, inspect
 from threading import Lock
-from magic3.Utils import Singleton, DummyLock
+from magic3.utils import Singleton, DummyLock
 
 def _caller(depth = 1):
     ''' get caller of current frame '''
@@ -60,7 +60,7 @@ class Logger(object):
         """ not nessesary """
         logging.shutdown()
     
-    def Check(self)->bool:
+    def check(self)->bool:
         """ check logfile exists or not """
         return os.path.exists(self.__logfile);
     
@@ -95,7 +95,7 @@ class Logger(object):
         finally:
             self.__lock.release()
 
-    def Record(self, dictargs):
+    def record(self, dictargs):
         """ multi record """
         for msg, lv in dictargs.items():
             self.__call__(msg, level=lv, tb=_caller(1))
@@ -115,11 +115,11 @@ class Logger(object):
     def fatal(self, *messages):
         self.__call__(*messages, level='FATAL', tb=_caller(1))
     
-    def CurrentLines(self)->int:
+    def current_lines(self)->int:
         """ get number lines in current log file """ 
         return self.__nlines
     
-    def CurrentLevels(self)->dict:
+    def current_levels(self)->dict:
         """ get number levels in current log file """ 
         return self.__nlevel.copy()
 
@@ -128,7 +128,7 @@ class Logger(object):
 def test():
     """ test for Logger """
     log = Logger(os.path.expanduser('~') + os.sep + 'test.log')
-    log.Check()
+    log.check()
     print('log file : %s' % log.name)
     INFO = log.info
     WARN = log.warn
@@ -146,8 +146,8 @@ def test():
     INFO({'the first':'info', 'the second':'info'})
     FATAL('fuck!!!')
     INFO('log test finish...')
-    print('log lines:', log.CurrentLines())
-    print('log levels:', log.CurrentLevels())
+    print('log lines:', log.current_lines())
+    print('log levels:', log.current_levels())
     print('log file size : %.3fKB' % (log.size / 1024))
 
 

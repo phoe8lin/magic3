@@ -7,7 +7,7 @@ try:
     import aiohttp
 except ImportError:
     raise ImportError('magic3.crawler depends on aiohttp library')
-from magic3.Utils import *
+from magic3.utils import *
 
 # regex for checking a URL is valid or not 
 validURL = re.compile("^https?://\\w+[^\\s]*$(?ai)")
@@ -32,26 +32,26 @@ class CharsetCache(object):
         self._cache = dict()
         self._charset = re.compile(b"<meta.+?charset(?:\\W+)(?P<code>[-_0-9a-zA-Z]+).*?>", re.IGNORECASE)
 
-    def Key(self, url)->str:
+    def key(self, url)->str:
         if url.startswith('http://') or url.startswith('https://'):
             return url.split(self._delim, 2)[-1]
         else:
             return url.split(self._delim, 1)[0]
 
-    def Value(self, url)->str:
-        return self._cache[self.Key(url)]
+    def value(self, url)->str:
+        return self._cache[self.key(url)]
 
-    def Decode(self, url, html, errors='replace')->bytes:
+    def decode(self, url, html, errors='replace')->bytes:
         """ decode bytes in html specified in <meta> tag """
         try:
-            return html.decode(self.Value(url), errors=errors)
+            return html.decode(self.value(url), errors=errors)
         except KeyError:
             code = self._charset.search(html).group('code').decode('utf-8')
             code = code.lower()
-            self._cache[self.Key(url)] = code
+            self._cache[self.key(url)] = code
             return html.decode(code, errors=errors)
     
-    def Clear(self):
+    def clear(self):
         self._cache.clear()
 
 
@@ -66,11 +66,11 @@ class Response(object):
     def __len__(self):
         return len(self.header) + len(self.content)
 
-    def Size(self):
+    def size(self):
         return (len(self.header), len(self.content))
 
 
-async def FetchWithSession(method, session, callback, url, **options):
+async def fetch_in_session(method, session, callback, url, **options):
     """ default options:
         params = None
         data = None
@@ -97,7 +97,7 @@ async def FetchWithSession(method, session, callback, url, **options):
     return callback(Response(url, dict(r.headers), content))
 
 
-async def Fetch(method, callback, url, **options):
+async def fetch(method, callback, url, **options):
     """ default options:
         params = None
         data = None 
@@ -106,40 +106,40 @@ async def Fetch(method, callback, url, **options):
     `method` should be GET/POST/HEAD
     """
     with aiohttp.ClientSession() as session:
-        return await FetchWithSession(method, session, callback, url, **options)
+        return await fetch_in_session(method, session, callback, url, **options)
 
 
-async def FetchMultiWithSession(method, session, callback, urls:list, **options):
+async def fetch_multi_in_session(method, session, callback, urls:list, **options):
     """ fetch more than one url by specific session """
-    fetchers = [ FetchWithSession(method, session, callback, url, **options) for url in urls ]
+    fetchers = [ fetch_in_session(method, session, callback, url, **options) for url in urls ]
     return await asyncio.tasks.wait(fetchers)
 
 
-async def FetchMulti(method, callback, urls:list, **options):
+async def fetch_multi(method, callback, urls:list, **options):
     """ fetch more than one url, see fetch above """
-    fetchers = [ Fetch(method, callback, url, **options) for url in urls ]
+    fetchers = [ fetch(method, callback, url, **options) for url in urls ]
     return await asyncio.tasks.wait(fetchers)
 
 
-def TestFetch():
-    AioRun(
-        Fetch('GET', lambda r : print(r.url, len(r.content)), 'https://www.taobao.com'),
-        Fetch('GET', lambda r : print(r.url, len(r.content)), 'http://www.csdn.net'),
-        Fetch('GET', lambda r : print(r.url, len(r.content)), 'http://git.oschina.net')
+def test_fetch():
+    aio_run(
+        fetch('GET', lambda r : print(r.url, len(r.content)), 'https://www.taobao.com'),
+        fetch('GET', lambda r : print(r.url, len(r.content)), 'http://www.csdn.net'),
+        fetch('GET', lambda r : print(r.url, len(r.content)), 'http://git.oschina.net')
     )
 
-def TestDCache():
+def test_dc():
     cc = CharsetCache()
-    callback = lambda r : print(re.search("<title>.+?</title>(?ai)", cc.Decode(r.url, r.content)).group())
+    callback = lambda r : print(re.search("<title>.+?</title>(?ai)", cc.decode(r.url, r.content)).group())
     urls = ['https://www.baidu.com', 
             'http://www.sina.com.cn', 
             'http://www.163.com']
-    AioRun(FetchMulti('GET', callback, urls))
+    aio_run(fetch_multi('GET', callback, urls))
     print(cc._cache)
 
 
 if __name__ == '__main__':
-    TestFetch()
-    TestDCache()
+    test_fetch()
+    test_dc()
 
 

@@ -17,9 +17,9 @@ from datetime import datetime, date
 PythonVersion = (sys.version_info.major, sys.version_info.minor)
 
 
-def IsValidIP(ip)->bool:
+def is_valid_ip(ip)->bool:
     """ Returns true if the given string is a well-formed IP address(v4/v6) """
-    def FromStr(_ip):
+    def fromstr(_ip):
         if not _ip or '\x00' in _ip:
             return False
         try:
@@ -27,18 +27,18 @@ def IsValidIP(ip)->bool:
             return bool(res)
         except Exception:
             return False
-    def FromInt(_ip):
+    def fromint(_ip):
         try: 
             ip_address(_ip)
             return True
         except ValueError:
             return False
     if isinstance(ip, str): 
-        return FromStr(ip)
+        return fromstr(ip)
     elif isinstance(ip, int):  
-        return FromInt(ip)
+        return fromint(ip)
     else: 
-        raise TypeError('IsValidIP')
+        raise TypeError('is_valid_ip')
 
 
 class IPv4Macher:
@@ -51,7 +51,7 @@ class IPv4Macher:
     compiled2 = re.compile(pattern.encode(encoding='utf-8'))
 
 
-def ToBytes(obj:object)->bytes:
+def to_bytes(obj:object)->bytes:
     """ make object to bytes if supports, using `ascii` as defualt encode """
     if isinstance(obj, str):
         try:
@@ -62,16 +62,16 @@ def ToBytes(obj:object)->bytes:
         return obj
     return memoryview(obj).tobytes()
 
-def UTF8(s, errors='replace')->str:
+def utf8(s, errors='replace')->str:
     """ transform s to 'utf-8' coding """ 
     return str(s, 'utf-8', errors=errors)
 
 
-def MD5(buf:bytes)->str:
+def md5(buf:bytes)->str:
     """ get md5 hexdigest of bytes """
     return openssl_md5(buf).hexdigest()
 
-def RecursiveEncode(s:str, level:int=10)->str:
+def recursive_encode(s:str, level:int=10)->str:
     """ recursive encode `s` using base64,
         `level` is depth of recursive, the max value is 32 """
     assert level <= 32
@@ -79,25 +79,25 @@ def RecursiveEncode(s:str, level:int=10)->str:
         return str(s, 'utf-8')
     if not isinstance(s, (bytearray,bytes)):
         s = bytes(s, 'utf-8')
-    return RecursiveEncode(b64encode(s), level-1)
+    return recursive_encode(b64encode(s), level-1)
 
-def RecursiveDecode(s:str, level:int=10)->str:
-    """ recursive decode `s`(encoded by `RecursiveEncode`) using base64,
+def recursive_decode(s:str, level:int=10)->str:
+    """ recursive decode `s`(encoded by `recursive_encode`) using base64,
         `level` is depth of recursive, the max value is 32 """
     assert level <= 32
     if level <= 0:
         return str(s, 'utf-8')
     if not isinstance(s, (bytearray,bytes)):
         s = bytes(s, 'utf-8')
-    return RecursiveDecode(b64decode(s), level-1)
+    return recursive_decode(b64decode(s), level-1)
 
 
-def LoadJson(name, objHook=None)->dict:
+def loadjson(name, objHook=None)->dict:
     """ load json from file return dict """
     with _io.open(name, encoding='utf-8', errors='replace') as f:
         return json.loads(f.read(), encoding='utf-8', object_hook=objHook)
 
-def DumpJson(obj:dict, name=None)->str:
+def dumpjson(obj:dict, name=None)->str:
     """ dump json(dict) to file """
     str = json.dumps(obj, indent=4, ensure_ascii=False)
     if name:
@@ -105,7 +105,7 @@ def DumpJson(obj:dict, name=None)->str:
             f.write(str)
     return str
 
-def Debug(*args, **kwargs):
+def debug(*args, **kwargs):
     """ print to stderr not stdout """
     ts = time()
     dt = strftime('%F %T') + ('.%03d' % ((ts - int(ts)) * 1000))
@@ -122,34 +122,34 @@ class DummyLock:
     def release(self, *args, **kwargs): pass
 
 
-def ISOTime():
+def isotime():
     """ return iso datetime, like 2014-03-28 19:45:59 """ 
     return strftime('%F %T')
 
-def IsTimePoint(time_in_24h):
+def is_time(hms_in_24h:str):
     """ check now is specify time """
-    return strftime('%H:%M:%S') == time_in_24h
+    return strftime('%H:%M:%S') == hms_in_24h
 
-def WaitUntil(time_in_24h):
-    """ return until now is hour:minute:second """
+def wait_until(hms_in_24h:str):
+    """ return until now is Hour:Minute:Second """
     while True:
-        if strftime('%H:%M:%S') == time_in_24h:
+        if strftime('%H:%M:%S') == hms_in_24h:
             break
         sleep(0.5)
 
-def TimeMeter(src=os.path.basename(__file__)):
+def time_meter(src=os.path.basename(__file__)):
     """ print time when enter wrapped function and leave wrapped function """
     def _wrapper(func):
         @functools.wraps(func)
         def _call(*args, **kwargs):
-            Debug(ISOTime() + (' %s : %s started...' % (src, _call.__name__)))
+            debug(isotime() + (' %s : %s started...' % (src, _call.__name__)))
             ret = func(*args, **kwargs)
-            Debug(ISOTime() + (' %s : %s finished...' % (src, _call.__name__)))
+            debug(isotime() + (' %s : %s finished...' % (src, _call.__name__)))
             return ret
         return _call
     return _wrapper
 
-def PrintError(name, output=sys.stderr):
+def print_error(name, output=sys.stderr):
     """ print exception with extra info(name) and limit traceback in 2 """
     assert name
     assert output is sys.stderr or output is sys.stdout
@@ -163,7 +163,7 @@ class Timer(object):
     """ a simple timer for debug using """
     def __init__(self):
         self.t = time()
-    def Reset(self):
+    def reset(self):
         self.t = time()
     def __str__(self):
         return str(round((time() - self.t), 4))
@@ -173,7 +173,7 @@ class Timer(object):
         return time() - self.t
     def __int__(self):
         return int(time() - self.t)
-    def Show(self):
+    def show(self):
         print(str(self))
 
 
@@ -191,7 +191,7 @@ def Singleton(cls, *args, **kw):
     return _object
 
 
-def AioNewLoop(executor=None):
+def aio_new(executor=None):
     """ get new event loop with ThreadPoolExecutor """
     loop = asyncio.new_event_loop()
     if executor:
@@ -200,66 +200,66 @@ def AioNewLoop(executor=None):
         loop.set_default_executor(concurrent.futures.ThreadPoolExecutor())
     return loop
 
-def AioLoop():
+def aio_loop():
     """ get current event loop """
     return asyncio.get_event_loop()
 
-def AioTasks(*future):
+def aio_tasks(*future):
     """ wrap more futures as one waitable future """
     assert isinstance(future, (list, tuple))
     return asyncio.tasks.wait(future);
 
-def AioRun(*future, loop=None):
+def aio_run(*future, loop=None):
     """ run until complete """
     if not loop:
-        loop = AioLoop()
+        loop = aio_loop()
     if len(future) > 1:
-        return loop.run_until_complete(AioTasks(*future))
+        return loop.run_until_complete(aio_tasks(*future))
     else:
         return loop.run_until_complete(future[0])
 
-def AioToFuture(coro, loop=None):
+def aio_to_future(coro, loop=None):
     """ make coroutine to asyncio.Future """
     return asyncio.ensure_future(coro, loop=loop)
 
-def MakeAioThread(new=False, daemon=True, name=None):
+def make_aio_thread(new=False, daemon=True, name=None):
     """ Make a pair of asyncio loop and run_forever thread """
     if new:
-        loop = AioNewLoop()
+        loop = aio_new()
     else:
-        loop = AioLoop()
+        loop = aio_loop()
     aiothread = threading.Thread(target=loop.run_forever, name=name)
     aiothread.daemon = daemon
     aiothread.start()
     return (loop, aiothread)
     
-def AioCallSoon(function, *args, loop=None, **kwargs):
+def aio_call_soon(function, *args, loop=None, **kwargs):
     """ Arrange for a callback to be called as soon as possible
         Callbacks are called in the order in which they are registered
         Each callback will be called exactly once """
     if not loop:
-        loop = AioLoop()
+        loop = aio_loop()
     loop.call_soon(functools.partial(function,  *args, **kwargs))
     
-def AioCallSoonSafe(function, *args, loop=None, **kwargs):
-    """ Like AioCallSoon, but multi threads safe """
+def aio_call_soon_safe(function, *args, loop=None, **kwargs):
+    """ Like aio_call_soon, but multi threads safe """
     if not loop:
-        loop = AioLoop()
+        loop = aio_loop()
     loop.call_soon_threadsafe(functools.partial(function,  *args, **kwargs))
 
-def AioCallLater(delay, function, *args, loop=None, **kwargs):
+def aio_call_later(delay, function, *args, loop=None, **kwargs):
     """ Arrange for a callback to be called at a given time 
         Return a handler with cancel method that can be used to cancel the call 
         The delay can be an int or float in seconds which always relative to the current time """
     if not loop:
-        loop = AioLoop()
+        loop = aio_loop()
     loop.call_later(delay, functools.partial(function,  *args, **kwargs))
 
-def AioCallAt(aiotime, function, *args, loop=None, **kwargs):
+def aio_at(aiotime, function, *args, loop=None, **kwargs):
     """ Like call_later(), but uses an absolute time which 
         corresponds to the event loop's time() method """
     if not loop:
-        loop = AioLoop()
+        loop = aio_loop()
     loop.call_at(aiotime, functools.partial(function,  *args, **kwargs))
 
 
@@ -270,9 +270,9 @@ class BomHelper(object):
     __lock__ = threading.Lock()
     def __init__(self, filename, defaultBOM=codecs.BOM_UTF8):
         """ defaultBOM can be specified by user from valid values in codecs """
-        self.Reset(filename, defaultBOM)
+        self.reset(filename, defaultBOM)
 
-    def Reset(self, filename, defaultBOM=codecs.BOM_UTF8):
+    def reset(self, filename, defaultBOM=codecs.BOM_UTF8):
         """ """
         if os.path.getsize(filename) > (1<<30):
             raise RuntimeError('Error: file %s is too large!!!' % self.__name)
@@ -289,11 +289,11 @@ class BomHelper(object):
         with open(self.__name, 'rb') as f:
             return f.read(3) == self.__bom
 
-    def Has(self):
+    def has(self):
         """ check file has BOM or not """
         return self.__sync(self.__has)
 
-    def Insert(self):
+    def insert(self):
         """ add BOM to file, the filesize can Not be larger than 1GB """
         def _insert():
             if self.__has():
@@ -306,7 +306,7 @@ class BomHelper(object):
             return True
         return self.__sync(_insert)
 
-    def Remove(self):
+    def remove(self):
         """ remove BOM from file, the filesize can Not be larger than 1GB """
         def _remove():
             if not self.__has():
@@ -319,7 +319,7 @@ class BomHelper(object):
             return True
         return self.__sync(_remove)
 
-    def Value(self):
+    def value(self):
         """ get default BOM value in bytes """
         return self.__bom
 
@@ -329,7 +329,7 @@ _weekdays = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
 _weekdays_zh = ('星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日')
 _isoweekdays = (None, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday')
 
-def MakeCalendar(year=None):
+def make_calendar(year=None):
     """ Return a list contains all days datetime object with weekday in the `year` """
     if not year:
         year = datetime.today().year
@@ -345,11 +345,11 @@ def MakeCalendar(year=None):
         cal.append(month)
     return cal
 
-def MakeWeektable(year=None):
+def make_week_table(year=None):
     """ Return a table of collected days on each weeks in a year(always 52 weeks) """
     if not year:
         year = datetime.today().year
-    cal = MakeCalendar(year)
+    cal = make_calendar(year)
     wdt = {}
     if cal[1][1][1] == 'Monday': 
         num = 0
@@ -364,9 +364,9 @@ def MakeWeektable(year=None):
             wdt[d] = num
     return wdt
 
-def DateDelta(y1, m1, d1, y2, m2, d2):
+def date_delta(y1, m1, d1, y2, m2, d2):
     """ Return timedelta object of two date, eg:
-        d = DateDelta(2015, 3, 2, 2016, 3, 2)
+        d = date_delta(2015, 3, 2, 2016, 3, 2)
     """
     y1, m1, d1 = int(y1), int(m1), int(d1)
     y2, m2, d2 = int(y2), int(m2), int(d2)
@@ -374,9 +374,9 @@ def DateDelta(y1, m1, d1, y2, m2, d2):
     d2 = datetime(y2, m2, d2, 0, 0, 0)
     return d2 - d1 if d2 > d1 else d1 - d2
 
-def TimeDelta(H1, M1, S1, H2, M2, S2):
+def time_delta(H1, M1, S1, H2, M2, S2):
     """ Return timedelta object of two time, eg:
-        d = TimeDelta(22, 33, 44, 23, 59, 0)
+        d = time_delta(22, 33, 44, 23, 59, 0)
     """
     H1, M1, S1 = int(H1), int(M1), int(S1)
     H2, M2, S2 = int(H2), int(M2), int(S2)
@@ -384,7 +384,7 @@ def TimeDelta(H1, M1, S1, H2, M2, S2):
     d2 = datetime(1970, 1, 1, H2, M2, S2)
     return d2 - d1 if d2 > d1 else d1 - d2
 
-def DateTimeDelta(y1, m1, d1, H1, M1, S1, y2, m2, d2, H2, M2, S2):
+def datetime_delta(y1, m1, d1, H1, M1, S1, y2, m2, d2, H2, M2, S2):
     """ Return timedelta object of two datetime """
     y1, m1, d1, H1, M1, S1 = int(y1), int(m1), int(d1), int(H1), int(M1), int(S1)
     y2, m2, d2, H2, M2, S2 = int(y2), int(m2), int(d2), int(H2), int(M2), int(S2)
@@ -398,76 +398,76 @@ class WeekDayUtil:
     weekdays = _weekdays
     weekdays_zhmap = dict(zip(_weekdays, _weekdays_zh))
     isoweekdays = _isoweekdays
-    calendar = MakeCalendar()
-    weektable = MakeWeektable()
+    calendar = make_calendar()
+    weektable = make_week_table()
     
     @staticmethod
-    def FirstSomeday(month, weekday='Monday'):
+    def first_someday(month, weekday='Monday'):
         """ Get first Monday of the month """
         assert weekday in _weekdays
         cal = WeekDayUtil.calendar
         return next(filter(lambda _:_[1] == weekday, cal[month]))[0]
     
     @staticmethod
-    def AllSomedays(month, weekday='Monday'):
+    def all_someday(month, weekday='Monday'):
         """ Get all specified weekdays of the month """
         assert weekday in _weekdays
         cal = WeekDayUtil.calendar
         return list(t[0] for t in filter(lambda _:_[1] == weekday, cal[month]))
 
     @staticmethod
-    def Reset(year):
-        WeekDayUtil.calendar = MakeCalendar(year)
-        WeekDayUtil.weektable = MakeWeektable(year)
+    def reset(year):
+        WeekDayUtil.calendar = make_calendar(year)
+        WeekDayUtil.weektable = make_week_table(year)
 
 
 def test():
-    assert(IsValidIP('127.0.0.1'))
-    assert(IsValidIP('4.4.4.4'))
-    assert(IsValidIP('192.168.255.0'))
-    assert(IsValidIP('::1'))
-    assert(IsValidIP('2620:0:1cfe:face:b00c::3'))
-    assert(not IsValidIP('www.google.com'))
-    assert(not IsValidIP('localhost'))
-    assert(not IsValidIP('[4.4.4.4]'))
-    assert(not IsValidIP('127.0.0.1.2.3'))
-    assert(not IsValidIP('123123123123'))
-    assert(not IsValidIP('\x00\x01\x02\x03'))
-    assert(not IsValidIP('123.123.321.456'))
-    assert(not IsValidIP(''))
+    assert(is_valid_ip('127.0.0.1'))
+    assert(is_valid_ip('4.4.4.4'))
+    assert(is_valid_ip('192.168.255.0'))
+    assert(is_valid_ip('::1'))
+    assert(is_valid_ip('2620:0:1cfe:face:b00c::3'))
+    assert(not is_valid_ip('www.google.com'))
+    assert(not is_valid_ip('localhost'))
+    assert(not is_valid_ip('[4.4.4.4]'))
+    assert(not is_valid_ip('127.0.0.1.2.3'))
+    assert(not is_valid_ip('123123123123'))
+    assert(not is_valid_ip('\x00\x01\x02\x03'))
+    assert(not is_valid_ip('123.123.321.456'))
+    assert(not is_valid_ip(''))
     
-    assert(IsTimePoint(ISOTime().split()[1]))
-    t = ISOTime().split()[1]
+    assert(is_time(isotime().split()[1]))
+    t = isotime().split()[1]
     sleep(1)
-    assert(not IsTimePoint(t))
-    j = DumpJson({t:'go', 'key':PythonVersion})
+    assert(not is_time(t))
+    j = dumpjson({t:'go', 'key':PythonVersion})
     d = json.loads(j)
     assert(t in d and 3 in d['key']) 
-    assert(MD5(b'abcdef0987654321') == 'eaa1c1d22e330b10903dfdbfed5e6ff9')
-    assert(RecursiveDecode(RecursiveEncode('github.com')) == 'github.com')
-    assert(BomHelper(__file__).Value() == codecs.BOM_UTF8)
+    assert(md5(b'abcdef0987654321') == 'eaa1c1d22e330b10903dfdbfed5e6ff9')
+    assert(recursive_decode(recursive_encode('github.com')) == 'github.com')
+    assert(BomHelper(__file__).value() == codecs.BOM_UTF8)
     
-    print(DateDelta(2015, 1, 1, 2014, 1, 1))
-    print(TimeDelta(21, 30, 0, 22, 0, 0))
-    print(DateTimeDelta(2015, 5, 2, 0, 30, 30, 2015, 5, 12, 12, 30, 30))
-    print(WeekDayUtil.FirstSomeday(5, 'Monday'))
-    print(WeekDayUtil.AllSomedays(5, 'Sunday'))
-    WeekDayUtil.Reset(2017)
-    print(WeekDayUtil.FirstSomeday(1, 'Monday'))
-    print(WeekDayUtil.AllSomedays(1, 'Sunday'))
+    print(date_delta(2015, 1, 1, 2014, 1, 1))
+    print(time_delta(21, 30, 0, 22, 0, 0))
+    print(datetime_delta(2015, 5, 2, 0, 30, 30, 2015, 5, 12, 12, 30, 30))
+    print(WeekDayUtil.first_someday(5, 'Monday'))
+    print(WeekDayUtil.all_someday(5, 'Sunday'))
+    WeekDayUtil.reset(2017)
+    print(WeekDayUtil.first_someday(1, 'Monday'))
+    print(WeekDayUtil.all_someday(1, 'Sunday'))
     print(WeekDayUtil.weekdays_zhmap)
     
     def userfunc(arg, **kwargs):
         d[arg] = kwargs['a']
-    AioCallSoon(userfunc, 111, a=111)
-    AioCallSoonSafe(userfunc, 222, a=222)
-    AioCallLater(1, userfunc, 333, a=333)
-    AioCallAt(AioLoop().time() + 2, userfunc, 444, a=444)
-    loop, aioth = MakeAioThread()
+    aio_call_soon(userfunc, 111, a=111)
+    aio_call_soon_safe(userfunc, 222, a=222)
+    aio_call_later(1, userfunc, 333, a=333)
+    aio_at(aio_loop().time() + 2, userfunc, 444, a=444)
+    loop, aioth = make_aio_thread()
     sleep(2)
     for i in range(1,5):
         assert d[i*111] == i*111
-    Debug(__file__, ': Test OK')
+    debug(__file__, ': Test OK')
 
 
 if __name__ == '__main__':

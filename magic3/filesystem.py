@@ -5,56 +5,56 @@ import sys, os, time, re
 from time import localtime
 from pathlib import Path
 from platform import platform
-from magic3.Utils import Debug
+from magic3.utils import debug
 
-def AddPythonPath(name:str)->bool:
+def add_sys_path(name:str)->bool:
     """ add name into sys.path """
     if name in sys.path:
         return False
     sys.path.insert(0, name)
     return True
 
-def UserDir():
+def user_dir():
     """ return current user's dir with os.sep """
     return os.path.expanduser('~') + os.sep
 
-def HomeDir():
+def home_dir():
     """ return home dir of current user with os.sep """
     return str(Path.home()) + os.sep
 
-def CurDir():
+def cur_dir():
     """ return current dir of fn """
     return str(Path(os.path.curdir).absolute())
 
-def ParentDir(fn):
+def parent_dir(fn):
     """ return parent directory of existed filename """
     return str(Path(fn).parent.absolute()) + os.sep
 
-def GrandsireDir(fn):
+def grand_dir(fn):
     """ return grand father directory of existed filename """
-    return ParentDir(ParentDir(fn))
+    return parent_dir(parent_dir(fn))
 
-def Basename(fn):
+def basename(fn):
     """ return base name of filename """
     return os.path.basename(os.path.realpath(fn))
 
-def Dirname(fn):
+def dirname(fn):
     """ return directory name of filename with os.sep """
     return os.path.dirname(os.path.realpath(fn)) + os.sep
 
-def CMAFileTime(fn):
+def filetime(fn):
     """ get file time : ctime, mtime, atime """
     assert os.path.exists(fn)
     fstat = os.lstat(fn)
     ct, mt, at = fstat.st_ctime, fstat.st_mtime, fstat.st_atime
     return (localtime(ct), localtime(mt), localtime(at))
 
-def SpanWildcard(path:str, wildcard:str)->list:
+def span_wildcard(path:str, wildcard:str)->list:
     """ span the wildcard in path """
     print(os.path.realpath(path))
     return [str(p) for p in Path(os.path.realpath(path)).glob(wildcard)]
     
-def SpanWildcardRecurse(path:str, wildcard:str)->list:
+def span_wildcard_recurse(path:str, wildcard:str)->list:
     """ span the wildcard in path recursive """
     print(os.path.realpath(path))
     return [str(p) for p in Path(os.path.realpath(path)).rglob(wildcard)]
@@ -84,7 +84,7 @@ class PathSpliter(object):
         """ get basename of the filename """
         return os.path.basename(self._fname)
     
-    def UpDir(self, n=1)->str:
+    def updir(self, n=1)->str:
         """ return a list of parent dirs """
         assert n >= 0
         if not n:
@@ -114,7 +114,7 @@ class PathWalker(object):
         self._path = path
         self._pred = predicate
 
-    def Walk(self):
+    def walk(self):
         """ walking the path recursive """
         result = []
         for root, dirs, names in os.walk(self._path):
@@ -130,7 +130,7 @@ class PathWalker(object):
                     result.append(root + d)
         return result
 
-def IsValidDir(*args) ->bool:
+def is_valid_dir(*args) ->bool:
     """ check is valid dir """
     for d in args:
         assert isinstance(d, str)
@@ -142,17 +142,17 @@ def IsValidDir(*args) ->bool:
         return d.startswith('/')
     return True
 
-def ListDir(path, pred=lambda x:True)->list:
+def list_dir(path, pred=lambda x:True)->list:
     """ get all file names in `path` recursive """
-    return PathWalker(path, pred).Walk()
+    return PathWalker(path, pred).walk()
 
-def ListMatched(path, sre):
+def list_matched(path, sre):
     """ list all filenames in `path` which matched `sre` recursive """
     x = re.compile(sre)
-    return [fn for fn in ListDir(path) if x.match(fn)]
+    return [fn for fn in list_dir(path) if x.match(fn)]
 
-def ScanDir(path):
-    """ like ListDir, but without recursive!!! """
+def scan_dir(path):
+    """ like list_dir, but without recursive!!! """
     if sys.version_info.minor >= 5:
         return tuple(os.scandir(path))
     else:
@@ -160,41 +160,41 @@ def ScanDir(path):
 
 
 def test(path):
-    print('user dir:', UserDir())
-    print('cwd dir:', CurDir())
-    print('parent dir:', ParentDir(CurDir()))
+    print('user dir:', user_dir())
+    print('cwd dir:', cur_dir())
+    print('parent dir:', parent_dir(cur_dir()))
     print('test PathWalker:')
     ps = PathSpliter('/home/user/temp/domains.txt')
     print(str(ps))
-    print(ps.UpDir(0))
-    print(ps.UpDir(1))
-    print(ps.UpDir(2))
-    print(ps.UpDir(3))
+    print(ps.updir(0))
+    print(ps.updir(1))
+    print(ps.updir(2))
+    print(ps.updir(3))
     print(ps.exist, ps.dirname, ps.basename)
     print(ps[0])
     print(ps[1])
     print(ps[2])
     print(ps[3])
     print('\ntest file time stat:')
-    c, m ,a = CMAFileTime(path)
+    c, m ,a = filetime(path)
     print(c.tm_year, c.tm_mon, c.tm_mday)
     print(m.tm_year, m.tm_mon, m.tm_mday)
     print(a.tm_year, a.tm_mon, a.tm_mday)
-    print('\ntest ListDir with lambda:')
+    print('\ntest list_dir with lambda:')
     cb = lambda fn : fn.endswith('.py')
-    fs = ListDir(CurDir(), cb)
+    fs = list_dir(cur_dir(), cb)
     print(fs)
-    print('\ntest ScanDir:')
-    print(ScanDir(path))
-    AddPythonPath(__file__)
+    print('\ntest scan_dir:')
+    print(scan_dir(path))
+    add_sys_path(__file__)
     assert sys.path[0] == __file__
     gd = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    print(GrandsireDir(__file__))
-    assert GrandsireDir(__file__) == gd + os.sep 
+    print(grand_dir(__file__))
+    assert grand_dir(__file__) == gd + os.sep 
     print('\ntest OK')
 
 
 if __name__ == '__main__':
-    test(UserDir() + 'tmp')
+    test(user_dir() + 'tmp')
 
 

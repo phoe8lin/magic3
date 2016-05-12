@@ -3,7 +3,7 @@
 # note   : python3.5+
 import threading, getpass
 import asyncio, aiomysql, aioredis
-from magic3.Utils import *
+from magic3.utils import *
 
 if PythonVersion <= (3, 4):
     raise ImportError("python version should be >= 3.5.0")
@@ -37,7 +37,7 @@ class AioDBClient(object):
     def tasks(self):
         """ return tasks as futures """
         assert self.size
-        return AioTasks(*self._tasks) 
+        return aio_tasks(*self._tasks) 
 
     @property
     def size(self):
@@ -48,7 +48,7 @@ class AioDBClient(object):
         """ blocking call, run all tasks """
         assert self.size
         try:
-            AioRun(self.tasks)
+            aio_run(self.tasks)
         except Exception as e:
             raise e
         finally:
@@ -94,7 +94,7 @@ class AioMysql(AioDBClient):
                 await con.commit()
                 return cur
 
-    async def Execute(self, sql, *args):
+    async def execute(self, sql, *args):
         """ coroutine of execute a SQL with args like pymysql, return fetched results """
         cur = await self.__Execute(sql, *args)
         return await cur.fetchall()
@@ -195,7 +195,7 @@ def InputPassword():
 
 def TestAioMysql():
     """ simple test for this AioMysql """
-    show = lambda r: Debug(list(r))
+    show = lambda r: debug(list(r))
     options = AioMysql.DefaultConnectArgs()
     options['password'] = InputPassword()
     
@@ -204,12 +204,12 @@ def TestAioMysql():
     # for looking clearly
     Addtask = db.Addtask
     Addtasks = db.Addtasks
-    Execute = db.Execute
+    execute = db.execute
     ExecuteMany = db.ExecuteMany
     ExecuteWithCallback = db.ExecuteWithCallback
     ExecuteManyWithCallback = db.ExecuteManyWithCallback
 
-    Debug('Test create table')
+    debug('Test create table')
 
     SQL_DROP = "DROP TABLE IF EXISTS `test_aiodb`"
     SQL_CREATE = """
@@ -220,11 +220,11 @@ def TestAioMysql():
     SHOW TABLES;
     """
 
-    Addtask(Execute(SQL_DROP)).RunAllTasks()
-    Addtask(Execute(SQL_CREATE)).RunAllTasks()
-    Addtask(Execute("SHOW TABLES"), lambda r : Debug(list(sorted(r))[0])).RunAllTasks()
+    Addtask(execute(SQL_DROP)).RunAllTasks()
+    Addtask(execute(SQL_CREATE)).RunAllTasks()
+    Addtask(execute("SHOW TABLES"), lambda r : debug(list(sorted(r))[0])).RunAllTasks()
 
-    Debug('Test execute many, insert 10000 rows!!!')
+    debug('Test execute many, insert 10000 rows!!!')
     names_to_insert = ['Python', 'Cpp', 'Java', 'Ruby', 'Scala', 'Delphi'] * 10000
 
     Addtask(
@@ -235,22 +235,22 @@ def TestAioMysql():
         ExecuteWithCallback(show, 'SELECT COUNT(*) FROM `test_aiodb`'),
     ).RunAllTasks()
 
-    Debug('Test singel execute')
+    debug('Test singel execute')
     Addtask(
         ExecuteWithCallback(lambda _:debug(_[-1]), 'SELECT * FROM `test_aiodb`')
     ).RunAllTasks()
     
-    Debug('Test multi execute')
+    debug('Test multi execute')
     Addtasks(
-        Execute('SELECT * FROM `test_aiodb` WHERE `id`=1'),
-        Execute('SELECT * FROM `test_aiodb` WHERE `id`=2'),
-        Execute('SELECT * FROM `test_aiodb` WHERE `id`=3'),
-        Execute('SELECT * FROM `test_aiodb` WHERE `id`=4'),
-        Execute('SELECT * FROM `test_aiodb` WHERE `id`=5'),
+        execute('SELECT * FROM `test_aiodb` WHERE `id`=1'),
+        execute('SELECT * FROM `test_aiodb` WHERE `id`=2'),
+        execute('SELECT * FROM `test_aiodb` WHERE `id`=3'),
+        execute('SELECT * FROM `test_aiodb` WHERE `id`=4'),
+        execute('SELECT * FROM `test_aiodb` WHERE `id`=5'),
         done_callback = show
     ).RunAllTasks()
 
-    Debug('Test double callback')
+    debug('Test double callback')
     Addtasks(
         ExecuteWithCallback(lambda r : r[:1], 'SELECT 1 FROM `test_aiodb`'),
         ExecuteWithCallback(lambda r : r[:2], 'SELECT 2 FROM `test_aiodb`'),
@@ -266,23 +266,23 @@ def TestAioRedis():
         nonlocal n
         n += len(x)
     ar = AioRedis()
-    ar.Addtask(ar.DBSize(), lambda n: Debug('DBSIZE:', n)).RunAllTasks()
+    ar.Addtask(ar.DBSize(), lambda n: debug('DBSIZE:', n)).RunAllTasks()
     ar.Addtask(ar.ExecuteMany(['SET my-key-for-test my-val', 'SET QQ-for-test 123'] * 500), cb).RunAllTasks()
     ar.Addtask(ar.ExecuteMany(['GET my-key-for-test', 'GET QQ-for-test'] * 500), cb).RunAllTasks()
-    ar.Addtask(ar.DBSize(), lambda n: Debug('DBSIZE:', n)).RunAllTasks()
+    ar.Addtask(ar.DBSize(), lambda n: debug('DBSIZE:', n)).RunAllTasks()
     ar.Addtasks(
         ar.execute('DEL my-key-for-test'), 
         ar.execute('DEL QQ'),
     ).RunAllTasks()
-    ar.Addtask(ar.DBSize(), lambda n: Debug('DBSIZE:', n)).RunAllTasks()
-    Debug(n)
+    ar.Addtask(ar.DBSize(), lambda n: debug('DBSIZE:', n)).RunAllTasks()
+    debug(n)
 
 
 if __name__ == '__main__':
-    Debug('Test AioMysql')
+    debug('Test AioMysql')
     TestAioMysql()
-    Debug('Test AioRedis')
+    debug('Test AioRedis')
     TestAioRedis()
-    Debug('Test OK')
+    debug('Test OK')
 
 

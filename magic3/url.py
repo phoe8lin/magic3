@@ -16,49 +16,49 @@ class URLMacher:
     compiled = re.compile(pattern, re.S)
     compiled2 = re.compile(pattern2, re.S)
 
-def ExtractURLFromText(text:'str or bytes')->frozenset:
+def extract_url_from_text(text:'str or bytes')->frozenset:
     """ extract all url unduplicate in text """
     if isinstance(text, str):
         return set(i.group(0) for i in list(URLMacher.compiled.finditer(text)))
     elif isinstance(text, bytes):
         return set(i.group(0) for i in list(URLMacher.compiled2.finditer(text)))
-    raise ValueError('ExtractURLFromText')
+    raise ValueError('extract_url_from_text')
 
-def AddHttp(uri):
+def addhttp(uri):
     """ add 'http://' prefix to url """
     return uri if uri[:7] == 'http://' else 'http://' + uri
 
-def AddHttp2(uri):
+def addhttp2(uri):
     """ add 'http://' prefix to url """
     return uri if uri[:7] == b'http://' else b'http://' + uri
 
-def TrimHttp(uri):
+def trimhttp(uri):
     """ strip 'http://' prefix to url """
     return uri if uri[:7] != 'http://' else uri[7:]
 
-def TrimHttp2(uri):
+def trimhttp2(uri):
     """ strip 'http://' prefix to url """
     return uri if uri[:7] != b'http://' else uri[7:]
 
-def URLPath(url:str)->str:
+def urlpath(url:str)->str:
     """ get url's path(strip params) """
     return url.split('?', 1)[0]
 
-def URLPath2(url:bytes)->bytes:
+def urlpath2(url:bytes)->bytes:
     """ get url's path(strip params) """
     return url.split(b'?', 1)[0]
 
-def URLHost(url:str)->str:
+def urlhost(url:str)->str:
     """ get url's host(domain name) """
-    return TrimHttp(url).split('/', 1)[0]
+    return trimhttp(url).split('/', 1)[0]
 
-def URLHost2(url:bytes)->bytes:
+def urlhost2(url:bytes)->bytes:
     """ get url's host(domain name) """
-    return TrimHttp2(url).split(b'/', 1)[0]
+    return trimhttp2(url).split(b'/', 1)[0]
 
-def URLSplit(url:str)->(str,str,str):
+def urlsplit(url:str)->(str,str,str):
     """ split `url` to 3 part: raw url, url without params, url domain """
-    url = TrimHttp(url)
+    url = trimhttp(url)
     seps = url.split('?', 1)
     host = seps[0].split('/', 1)[0]
     if len(seps) > 1:
@@ -66,9 +66,9 @@ def URLSplit(url:str)->(str,str,str):
     else:
         return host, seps[0], ''
 
-def URLSplit2(url:bytes)->(bytes,bytes,bytes):
+def urlsplit2(url:bytes)->(bytes,bytes,bytes):
     """ split `url` to 3 part: raw url, url without params, url domain """
-    url = TrimHttp2(url)
+    url = trimhttp2(url)
     seps = url.split(b'?', 1)
     host = seps[0].split(b'/', 1)[0]
     if len(seps) > 1:
@@ -76,7 +76,7 @@ def URLSplit2(url:bytes)->(bytes,bytes,bytes):
     else:
         return host, seps[0], b''
 
-def UnQuote(s, errors='strict')->str:
+def try_unquote(s, errors='strict')->str:
     """ unquote url or others strictly, try step:
         first  'utf-8'
         second 'gbk'
@@ -103,11 +103,11 @@ class URLString(str):
         self.solver = Resolver()
     
     @classmethod
-    def ConfigSolver(cls, solver_type='tornado.netutil.BlockingResolver'):
+    def config_solver(cls, solver_type='tornado.netutil.BlockingResolver'):
         Resolver.configure(solver_type)
 
     @property
-    def Resolved(self)->list:
+    def resolve(self)->list:
         """ DNS resolve """
         return self.solver.resolve(self.parsed.netloc, port=80).result()
     
@@ -132,17 +132,17 @@ class URLString(str):
 
 
 def test():
-    assert(b'www.baidu.com' == URLHost2(b'www.baidu.com'))
-    assert(b'http://www.baidu.com/s' == URLPath2(b'http://www.baidu.com/s'))
-    h, p, q = URLSplit2(b'www.baidu.com/s?ie=utf-8&wd=123')
+    assert(b'www.baidu.com' == urlhost2(b'www.baidu.com'))
+    assert(b'http://www.baidu.com/s' == urlpath2(b'http://www.baidu.com/s'))
+    h, p, q = urlsplit2(b'www.baidu.com/s?ie=utf-8&wd=123')
     assert(b'ie=utf-8&wd=123' == q)
     text = b"""<html>
     <p>URL</p><p> http://www.sina.com.cn </p><p>URL</p>
     </html>"""
-    for url in ExtractURLFromText(text):
+    for url in extract_url_from_text(text):
         print(url)
         s = URLString(url.decode())
-        print(s.Resolved[0], s.scheme)
+        print(s.resolve[0], s.scheme)
     print('OK')
 
 if __name__ == '__main__':

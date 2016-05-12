@@ -7,17 +7,17 @@ from _io import open, DEFAULT_BUFFER_SIZE, BytesIO
 from abc import abstractmethod, ABCMeta
 from os.path import exists
 from string import Template
-from magic3.Utils import Debug
-from magic3.FileSystem import UserDir,ListDir,PathSpliter
-from magic3.System import OSCommand
+from magic3.utils import debug
+from magic3.filesystem import user_dir,list_dir,PathSpliter
+from magic3.system import OSCommand
 
 AWK_CMD = Template("""awk -F "${delim}" '{print ${vargs}}' ${files} 2>&1""")
 bestIOBufferSize = DEFAULT_BUFFER_SIZE << 2
-TWO_GB = (1024*1024*1024*2)
+TWO_GB = (1024 * 1024 * 1024 * 2)
 
-def OpenAWK(filelist:list, pos_args:list, delim):
+def open_awk(filelist:list, pos_args:list, delim):
     """ call awk command and return an opened pipe for read the output of awk, eg:
-        for line in OpenAWK([file1, file2], [2,3,4], ',').stdout:
+        for line in open_awk([file1, file2], [2,3,4], ',').stdout:
             print(line)   
     """
     if isinstance(delim, (bytes, bytearray)):
@@ -41,25 +41,25 @@ def OpenAWK(filelist:list, pos_args:list, delim):
                                   files = ' '.join(filelist))
     if __debug__:
         print(cmd)
-    return OSCommand.Popen(cmd)
+    return OSCommand.popen(cmd)
 
-def ReadFromAWK(filelist:list, pos_args:list, delim=' ')->iter:
+def read_from_awk(filelist:list, pos_args:list, delim=' ')->iter:
     """ call awk command and return an iterator for reading the output of awk """
-    reader = OpenAWK(filelist, pos_args, delim).stdout
+    reader = open_awk(filelist, pos_args, delim).stdout
     if reader.readable() and not reader.closed:
         return iter(reader)
     else:
-        raise RuntimeError('OpenAWK failed')
+        raise RuntimeError('open_awk failed')
 
-def ReadFromAWKWithCallback(callback, filelist:list, pos_args:list, delim=' ')->iter:
+def read_from_awk_with_callback(callback, filelist:list, pos_args:list, delim=' ')->iter:
     """ call awk command and return an iterator of callback's return for each line in output """
-    reader = OpenAWK(filelist, pos_args, delim).stdout
+    reader = open_awk(filelist, pos_args, delim).stdout
     if reader.readable() and not reader.closed:
         return map(callback, reader)
     else:
-        raise RuntimeError('OpenAWK failed')
+        raise RuntimeError('open_awk failed')
 
-def OpenAsByteStream(filename):
+def open_as_bytes_stream(filename):
     """ if filesize < TWO_GB, read whole file as BytesIO object """
     filesize = os.path.getsize(filename)
     if filesize < TWO_GB:
@@ -70,33 +70,33 @@ def OpenAsByteStream(filename):
 
 
 class LineParserBase(metaclass=ABCMeta):
-    """ inherit this class and implement `Run` and `ParseLine` method """
+    """ inherit this class and implement `run` and `parse_line` method """
     def __init__(self, filenames=[], filedir='', namefilter='.*'):
         self._files = filenames if filenames else []
         self._dir = filedir
         self._filter = re.compile(namefilter)
-        self.CheckArgs()
+        self.check_args()
     
-    def CheckArgs(self):
+    def check_args(self):
         if self._dir and not isinstance(self._dir, str):
             raise TypeError
-        if self._dir and not self._dir.startswith(UserDir()):
-            self._dir = UserDir() + self._dir.lstrip(os.sep)
+        if self._dir and not self._dir.startswith(user_dir()):
+            self._dir = user_dir() + self._dir.lstrip(os.sep)
         if self._files and not isinstance(self._files, (list, tuple, set)):
             raise TypeError
         if not self._dir and not self._files:
             raise ValueError
         if self._dir:
-            tmp = [fn for fn in ListDir(self._dir, lambda s:self._filter.match(s))]
+            tmp = [fn for fn in list_dir(self._dir, lambda s:self._filter.match(s))]
         else:
             tmp = []
         tmp.extend(fn for fn in self._files if self._filter.match(fn))
         self._files = tuple(tmp)
         return self._files
 
-    def Read(self, fn, mode='rb', encoding='utf-8-sig', errors='replace'):
+    def read(self, fn, mode='rb', encoding='utf-8-sig', errors='replace'):
         bufsize = bestIOBufferSize
-        parser_ = self.ParseLine
+        parser_ = self.parse_line
         if 'b' in mode:
             for line in open(fn, mode, buffering=bufsize):
                 parser_(line.rstrip())
@@ -104,18 +104,18 @@ class LineParserBase(metaclass=ABCMeta):
             for line in open(fn, mode, buffering=bufsize, encoding=encoding, errors=errors):
                 parser_(line.rstrip())
     
-    def ReadAll(self, mode='rb', encoding='utf-8-sig'):
+    def read_all(self, mode='rb', encoding='utf-8-sig'):
         for each in self._files:
             if __debug__:
-                Debug(each)
-            self.Read(each, mode, encoding)
+                debug(each)
+            self.read(each, mode, encoding)
     
     @abstractmethod
-    def ParseLine(self, line):
+    def parse_line(self, line):
         raise NotImplementedError('inherit this method in subclasses!')
     
-    def Run(self):
-        self.ReadAll()
+    def run(self):
+        self.read_all()
 
 
 class AWKLineParserBase(LineParserBase):
@@ -127,31 +127,31 @@ class AWKLineParserBase(LineParserBase):
         self._fields = None
         self._delim = None
 
-    def Read(self, fn):
+    def read(self, fn):
         delimb = bytes(self._delim, 'utf-8')
-        parser_ = self.ParseLine
-        for line in ReadFromAWK([fn], self._fields, self._delim):
+        parser_ = self.parse_line
+        for line in read_from_awk([fn], self._fields, self._delim):
             parser_(line.rstrip().split(delimb))
 
     @abstractmethod
-    def ParseLine(self, seps:list):
+    def parse_line(self, seps:list):
         raise NotImplementedError('inherit this method in subclasses!')
 
-    def ReadAll(self):
+    def read_all(self):
         for each in self._files:
             if __debug__:
-                Debug(each)
-            self.Read(each)
+                debug(each)
+            self.read(each)
 
-    def Run(self, fields:list, delim:str=' '):
+    def run(self, fields:list, delim:str=' '):
         self._fields = tuple(fields)
         self._delim = delim
-        self.ReadAll()
+        self.read_all()
 
 
-def FileCount(textfile:str)->tuple:
+def file_count(textfile:str)->tuple:
     """ count lines, words, bytes in text file """
-    err, ret = OSCommand.Call('wc ' + textfile, False)
+    err, ret = OSCommand.call('wc ' + textfile, False)
     if err:
         raise RuntimeError(os.strerror(err))
     if ret:
@@ -171,17 +171,17 @@ class FileSpliter(object):
         ps = PathSpliter(self._fname)
         self._basename = ps.basename
         self._dirname = ps.dirname
-        self.Count()
+        self.count()
 
-    def Count(self):
-        """ same as FileCount """
+    def count(self):
+        """ same as file_count """
         if self._nline:
             return self._nline, self._nword, self._nbyte
         else:
-            self._nline, self._nword, self._nbyte = FileCount(self._fname)
+            self._nline, self._nword, self._nbyte = file_count(self._fname)
         return self._nline, self._nword, self._nbyte
 
-    def SplitedNames(self, nfile):
+    def splited_names(self, nfile):
         """ get result file names """
         if '.' in self._basename:
             ext = '.' + self._basename.split('.')[-1]
@@ -201,14 +201,14 @@ class FileSpliter(object):
         else:
             return n + 1
 
-    def SplitByLines(self, nline:int):
+    def split_by_lines(self, nline:int):
         """ split by every `nline` lines """
         nfile = self.__howmany(self._nline, nline)
-        newnames = self.SplitedNames(nfile)
+        newnames = self.splited_names(nfile)
         inames = iter(newnames)
         fout = open(next(inames), 'wb')
         n = 1
-        with OpenAsByteStream(self._fname) as stream:
+        with open_as_bytes_stream(self._fname) as stream:
             for line in stream:
                 if not (n % nline):
                     fout.close()
@@ -218,12 +218,12 @@ class FileSpliter(object):
             fout.close()
         return newnames
 
-    def SplitBySize(self, nbyte:int):
+    def split_by_size(self, nbyte:int):
         """ split by every `nbyte` bytes """
         nfile = self.__howmany(self._nbyte, nbyte)
-        newnames = self.SplitedNames(nfile)
+        newnames = self.splited_names(nfile)
         inames = iter(newnames)
-        with OpenAsByteStream(self._fname) as stream:
+        with open_as_bytes_stream(self._fname) as stream:
             buf = stream.read(nbyte)
             while buf:
                 fout = open(next(inames), 'wb')
@@ -232,13 +232,13 @@ class FileSpliter(object):
                 buf = stream.read(nbyte)
         return newnames
 
-    def SplitN(self, num:int):
+    def splitN(self, num:int):
         """ split into `num` files """
         nfile = num
         nbyte = int(math.ceil((self._nbyte + 1.0) / nfile))
-        return self.SplitBySize(nbyte)
+        return self.split_by_size(nbyte)
 
-    def SplitByWords(self, nword:int):
+    def split_by_words(self, nword:int):
         """ implemnet in futrue ... """
         raise NotImplementedError
 
@@ -248,7 +248,7 @@ def test():
         def __init__(self, name):
             super().__init__(filenames=[name])
             self.count = 0
-        def ParseLine(self, line):
+        def parse_line(self, line):
             words = [s for s in line.split() if len(s) >= 1]
             self.count += len(words)
         
@@ -256,26 +256,26 @@ def test():
         def __init__(self, name):
             super().__init__(filenames=[name])
             self.count = 0
-        def ParseLine(self, seps):
+        def parse_line(self, seps):
             words = [s for s in seps if len(s) >= 1]
             self.count += len(words)
 
     p1 = Parser(__file__)
-    p1.Run()
+    p1.run()
     print(p1.count)
     p2 = AWKParser(__file__)
-    p2.Run([3,4,5,6])
+    p2.run([3,4,5,6])
     print(p2.count)
 
     d = {}
-    for line in ReadFromAWK([__file__, __file__, __file__], [2, 3]):
+    for line in read_from_awk([__file__, __file__, __file__], [2, 3]):
         for s in line.split():
             try: d[s] += 1
             except: d[s] = 1
     for k, v in d.items():
         assert v >= 3
     fspliter = FileSpliter(__file__)
-    ret = fspliter.SplitBySize(1000)
+    ret = fspliter.split_by_size(1000)
     print(ret)
     for fn in ret:
         os.system('unlink ' + fn)
