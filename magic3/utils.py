@@ -7,7 +7,10 @@ import threading, socket
 import json, re
 import functools
 import _io, codecs
-from _hashlib import openssl_md5
+try:
+    from _hashlib import openssl_md5 as _md5hash
+except ImportError:
+    from hashlib import md5 as _md5hash
 from base64 import b64encode, b64decode
 from ipaddress import ip_address
 from time import time, strftime, sleep
@@ -69,7 +72,7 @@ def utf8(s, errors='replace')->str:
 
 def md5(buf:bytes)->str:
     """ get md5 hexdigest of bytes """
-    return openssl_md5(buf).hexdigest()
+    return _md5hash(buf).hexdigest()
 
 def recursive_encode(s:str, level:int=10)->str:
     """ recursive encode `s` using base64,
