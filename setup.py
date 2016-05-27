@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # date   : 2014.12.22
-""" run `python3 setup.py install` to install this module """
+''' run `python3 setup.py install` to install this module '''
 
 from distutils.core import setup
 from magic3 import __version__,__author__,__need__

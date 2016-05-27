@@ -5,30 +5,32 @@ import re
 from builtins import compile as _compile
 from mako.template import Template  # TODO: how about jinja2?
 
-# used for find all english words
+# Used for find all english words
 ReOnlyEnglish = re.compile("[A-Za-z]+")
 
-# used for split sentence and pick chinese parts 
+# Used for split sentence and pick chinese parts 
 ReNoneChinese = re.compile("[\u0000-\u4DFF]|[\u9FA5-\uFFFF]")
 
-# used for split sentence and pick chinese parts and english words
+# Used for split sentence and pick chinese parts and english words
 ReNoneChineseEnglish = re.compile("[\u0000-\u002F]|[\u003A-\u0040]|[\u005B-\u0060]|[\u007B-\u4DFF]|[\u9FA5-\uFFFF]")
 
+
 def pick_english(s:str):
-    """ picking english words splited by other characters """
+    ''' Picking english words splited by other characters '''
     return tuple(ReOnlyEnglish.findall(s))
 
 def pick_chinese(s:str):
-    """ like pickEnglish, but serve for chinese sentence """
+    ''' Like pickEnglish, but serve for chinese sentence '''
     return tuple(w for w in ReNoneChinese.split(s) if w)
     
 def pick_words(s:str):
-    """ combined of `pickEnglish` and `pickChinese` """
+    ''' Combined of `pickEnglish` and `pickChinese` '''
     return tuple(w for w in ReNoneChineseEnglish.split(s) if w)
 
-# source string of function `wordSplit`
-# compile this in runtime for better performance
-_WordSplitCodes = """
+
+# Source string of function `wordSplit`
+# Compile this in runtime for better performance
+_WordSplitCodes = '''
 def word_split(inputstr:str, charset:set)->tuple:
     buf = []
     def _extract():
@@ -39,24 +41,27 @@ def word_split(inputstr:str, charset:set)->tuple:
                 yield ''.join(buf)
                 buf.clear()
     return tuple(_extract())
-"""
+'''
 
-# check and compile `wordSplit`, for readability
-# assign from globals dict again, it's useless
+# Check and compile `wordSplit`, for readability
+# Assign from globals dict again, it's useless
 if 'word_split' not in globals():
     __ByteCodes = _compile(_WordSplitCodes, filename='', mode='exec', optimize=2)
     exec(__ByteCodes)
 word_split = globals()['word_split']
 
+
 def create_english_charset():
-    """ return a set contains english chars """
+    ''' Return a set contains english chars '''
     uppers = set(chr(i) for i in range(ord('a'),ord('z')))
     lowers = set(chr(i) for i in range(ord('A'),ord('Z')))
     return uppers | lowers
 
+
 def create_chinese_charset():
-    """ return a set contains chinese chars in utf-8 """
-    codet = Template("""
+    ''' Return a set contains chinese chars in utf-8 '''
+    
+    codet = Template('''
 <% 
 begin, end = 0x4E00, 0x9FA4
 %>
@@ -66,12 +71,14 @@ set((
 % endfor
     ${prefix}${hex(end).lstrip('0x')}${suffix}
 ))
-""")
+''')
+    
     src = codet.render(prefix='\"\\u', suffix='\"')
     return eval(compile(src, filename='', mode='eval', optimize=2))
 
+
 def create_all_charset():
-    """ combined of above """
+    ''' Combined of above '''
     en_chr = create_english_charset()
     zh_chr = create_chinese_charset()
     all_chr = en_chr | zh_chr
@@ -79,7 +86,7 @@ def create_all_charset():
 
 
 def test():
-    """ simple test for this module """
+    ''' Simple test for this module '''
     rawstr = "哔哩！哔哩？Ha+ha! ☆ 弹幕视频网 x（╯□╰）x 乾杯~ … china-bilibili@acg.net 莪咏逺嗳伱..."
     print(pick_english(rawstr))
     print(pick_chinese(rawstr))

@@ -2,7 +2,7 @@
 # author : cypro666
 # note   : python3.4+
 from collections import OrderedDict
-""" Dict for almost all mime-types and file extensions!!! """
+''' Dict for almost all mime-types and file extensions!!! '''
 
 # key is extension, value is content-type
 mimeDict = {
@@ -554,16 +554,16 @@ contentTypeSet = frozenset(mimeDict.values())
 
 
 def is_valid_extension(ext:str, icase=False):
-    """ """
+    ''' '''
     return (ext.lower() if icase else ext) in mimeDict
 
 def is_valid_content_type(ct:str, icase=False):
-    """ """
+    ''' '''
     return ct in contentTypeSet
 
 
 if __name__ == '__main__':
-    """ test """
+    ''' test '''
     assert is_valid_extension('.exe')
     assert not is_valid_extension('.fuck')
     assert is_valid_content_type('application/octet-stream')

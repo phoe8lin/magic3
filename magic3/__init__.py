@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # note   : python3.4+
-"""
+'''
 magic3 library based on python3.4+, it's simple, compositive and wraps many useful utils 
-"""
+'''
 
 __author__  = 'cypro666'
 __version__ = '1.5'

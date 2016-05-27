@@ -9,28 +9,28 @@ from itertools import \
 
 
 def itail(n, iterable):
-    " return an iterator over the last n items: tail(3, 'ABCDEFG') --> E F G "
+    ''' Return an iterator over the last n items: tail(3, 'ABCDEFG') --> E F G '''
     return iter(deque(iterable, maxlen=n))
 
 def iadvance(iterator, n):
-    " advance the iterator n-steps ahead. If n is none, consume entirely "
+    ''' Advance the iterator n-steps ahead. If n is none, consume entirely '''
     if n is None:
         deque(iterator, maxlen=0)
     else:
         next(islice(iterator, n, n), None)
 
 def ipadnone(iterable):
-    """ returns the sequence elements and then returns None indefinitely """
+    ''' Returns the sequence elements and then returns None indefinitely '''
     return chain(iterable, repeat(None))
 
 def irepeat_call(func, times=None, *args):
-    """ repeat calls to func with specified arguments """
+    ''' Repeat calls to func with specified arguments '''
     if times is None:
         return starmap(func, repeat(args))
     return starmap(func, repeat(args, times))
 
 def iroundrobin(*iterables):
-    """ roundrobin('ABC', 'D', 'EF') --> A D E B F C """
+    ''' Roundrobin('ABC', 'D', 'EF') --> A D E B F C '''
     pending = len(iterables)
     nexts = cycle(iter(it).__next__ for it in iterables)
     while pending:
@@ -42,18 +42,18 @@ def iroundrobin(*iterables):
             nexts = cycle(islice(nexts, pending))
 
 def ipartition(pred, iterable):
-    """ use a predicate to partition entries into false entries and true entries 
-        partition(is_odd, range(10)) --> 0 2 4 6 8   and  1 3 5 7 9 """
+    ''' Use a predicate to partition entries into false entries and true entries 
+        partition(is_odd, range(10)) --> 0 2 4 6 8   and  1 3 5 7 9 '''
     t1, t2 = tee(iterable)
     return filterfalse(pred, t1), filter(pred, t2)
 
 def ipowerset(iterable):
-    " powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3) "
+    " Powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3) "
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
 
 def iterexcept(func, exception, first=None):
-    """ call a function repeatedly until an exception is raised. Converts 
+    ''' Call a function repeatedly until an exception is raised. Converts 
         a call-until-exception interface to an iterator interface. Like 
         builtins.iter(func, sentinel) but uses an exception instead of a 
         sentinel to end the loop. Examples:
@@ -62,7 +62,7 @@ def iterexcept(func, exception, first=None):
         iter_except(d.popleft, IndexError)                       # non-blocking deque iterator
         iter_except(q.get_nowait, Queue.Empty)                   # loop over a producer Queue
         iter_except(s.pop, KeyError)                             # non-blocking set iterator
-    """
+    '''
     try:
         if first is not None:
             yield first()  # For database APIs needing an initial cast to db.first()
@@ -72,52 +72,52 @@ def iterexcept(func, exception, first=None):
         pass
 
 def ifirst_true(iterable, default=False, pred=None):
-    """ returns the first true value in the iterable. If no true value is found, 
+    ''' Returns the first true value in the iterable. If no true value is found, 
         returns *default* If *pred* is not None, returns the first item for which
         pred(item) is true. 
         first_true([a,b,c], x) --> a or b or c or x
-        first_true([a,b], x, f) --> a if f(a) else b if f(b) else x """
+        first_true([a,b], x, f) --> a if f(a) else b if f(b) else x '''
     return next(filter(pred, iterable), default)
 
 def irandom_select(iterable, n):
-    """ select n random elements from iterable """
+    ''' Select n random elements from iterable '''
     pool = tuple(iterable)
     indices = sorted(random.sample(range(len(pool)), n))
     return tuple(pool[i] for i in indices)
 
 def irandom_product(*args, repeat=1):
-    " random selection from itertools.product(*args, **kwds) "
+    ''' Random selection from itertools.product(*args, **kwds) '''
     pools = [tuple(pool) for pool in args] * repeat
     return tuple(random.choice(pool) for pool in pools)
 
 def irandom_permutation(iterable, r=None):
-    " random selection from itertools.permutations(iterable, r) "
+    ''' Random selection from itertools.permutations(iterable, r) '''
     pool = tuple(iterable)
     r = len(pool) if r is None else r
     return tuple(random.sample(pool, r))
 
 def irandom_combination(iterable, r):
-    "random selection from itertools.combinations_with_replacement(iterable, r)"
+    ''' Random selection from itertools.combinations_with_replacement(iterable, r) '''
     pool = tuple(iterable)
     n = len(pool)
     indices = sorted(random.randrange(n) for _ in range(r))
     return tuple(pool[i] for i in indices)
 
 def idot_product(vec1, vec2):
-    """ dot product of vectors, len(vec1) should be equalto len(vec2) """
+    ''' Dot product of vectors, len(vec1) should be equalto len(vec2) '''
     return sum(map(_mul, vec1, vec2))
 
 def itakeN(iterable, start, n):
-    """ take n elements from start pos from iterable """
+    ''' Take n elements from start pos from iterable '''
     return islice(iterable, start, start + n, 1)
 
 def foreach2(func1, func2, iterable):
-    """ for each element in iterable, call fun2(fun1(i)) """
+    ''' For each element in iterable, call fun2(fun1(i)) '''
     for each in iterable:
         yield func2(func1(each))
 
 def iuntil_fail(fun, exception, iterable, *args):
-    """ call fun with element in iterable and args until exception specified raised """
+    ''' Call fun with element in iterable and args until exception specified raised '''
     n = 0
     try:
         for i in iterable:
@@ -128,34 +128,34 @@ def iuntil_fail(fun, exception, iterable, *args):
     return n
 
 def inth(iterable, n, default=None):
-    """ get the n-th element from iterable """
+    ''' Get the n-th element from iterable '''
     return next(islice(iterable, n, None), default)
 
 def iquantify(iterable, pred=bool):
-    """ sum of pred(iterable) """
+    ''' Sum of pred(iterable) '''
     return sum(map(pred, iterable))
 
 def ichain(iterable, n):
-    """ cycle iterators of iterable, n times """
+    ''' Cycle iterators of iterable, n times '''
     return chain.from_iterable(repeat(tuple(iterable), n))
 
 def iflatten(nested):
-    """ flat nested containers, return chained iterator """
+    ''' Flat nested containers, return chained iterator '''
     return chain.from_iterable(nested)
 
 def ipairwise(iterable):
-    """ make pair of iterable using tee """
+    ''' Make pair of iterable using tee '''
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
 
 def igrouped(iterable, n, fillvalue=None):
-    """ put elements in n groups, aligned with fillvalue """
+    ''' Put elements in n groups, aligned with fillvalue '''
     args = [iter(iterable)] * n
     return zip_longest(fillvalue=fillvalue, *args)
 
 def ieverseen(iterable, key=None):
-    """ yield only seen before element from iterable """
+    ''' Yield only seen before element from iterable '''
     seen = set()
     seen_add = seen.add
     if key is None:
@@ -170,13 +170,13 @@ def ieverseen(iterable, key=None):
                 yield element
 
 def ijustseen(iterable, key=None):
-    """ yield just seen element from iterable """
+    ''' Yield just seen element from iterable '''
     return map(next, map(_itemgetter(1), groupby(iterable, key)))
 
 
 import unittest
 class TestIteralgos(unittest.TestCase):
-    """ unit tester for iteralgos """
+    ''' Unit tester for iteralgos '''
     def setUp(self):
         self.p = [1, 3, 5, 7, 9]
         self.q = [0, 2, 4, 6, 8]

@@ -5,118 +5,125 @@ import threading, getpass
 import asyncio, aiomysql, aioredis
 from magic3.utils import *
 
-if PythonVersion <= (3, 4):
+if PythonVersion < (3, 5):
     raise ImportError("python version should be >= 3.5.0")
 
 
 class AioDBClient(object):
-    """ As base of asyncio database wrappers below """
+    ''' As base of asyncio database wrappers below '''
+    
     def __init__(self):
         self._tasks = []
     
-    def Addtask(self, task, done_callback=None):
-        """ add a async task from execute or ExecuteWithCallback """
+    def add_task(self, task, done_callback=None):
+        ''' Add a async task from execute or ExecuteWithCallback '''
         task = aio_to_future(task)
+        
         if done_callback:
             task.add_done_callback(lambda f : done_callback(f.result()))
+        
         self._tasks.append(task)
         return self
     
-    def Addtasks(self, *tasks, done_callback=None):
-        """ add multi tasks """
+    def add_tasks(self, *tasks, done_callback=None):
+        ''' Add multi tasks '''
         for t in tasks:
-            self.Addtask(t, done_callback)
+            self.add_task(t, done_callback)
         return self
 
-    def ClearTasks(self):
-        """ clear all tasks """
+    def clear(self):
+        ''' Clear all tasks '''
         self._tasks.clear()
         return self
 
     @property
     def tasks(self):
-        """ return tasks as futures """
+        ''' Return tasks as futures '''
         assert self.size
         return aio_tasks(*self._tasks) 
 
     @property
     def size(self):
-        """ length of tasks list """
+        ''' Length of tasks list '''
         return len(self._tasks)
 
-    def RunAllTasks(self):
-        """ blocking call, run all tasks """
+    def run(self):
+        ''' Blocking call, run all tasks '''
         assert self.size
+        
         try:
             aio_run(self.tasks)
         except Exception as e:
             raise e
         finally:
-            self.ClearTasks()
+            self.clear()
+        
         return self
 
 
 class AioMysql(AioDBClient):
-    """ A wrapper of aiomysql for simple and easy using """
+    ''' A wrapper of aiomysql for simple and easy using '''
+    
     def __init__(self, **kwargs):
-        """ kwargs is the options for connecting like:
-            {
-                "host"     : "127.0.0.1",
-                "port"     : 3306,
-                "user"     : "root",
-                "password" : "fucker123",
-                "db"       : "test"
-            } """
+        ''' kwargs is the options for connecting like:
+        {
+            "host"     : "127.0.0.1",
+            "port"     : 3306,
+            "user"     : "root",
+            "password" : "fucker123",
+            "db"       : "test"
+        } '''
+            
         super().__init__()
         self._opt = dict(kwargs)
 
-    def Pool(self):
-        """ internal using for make aiomysql pool """
+    def pool(self):
+        ''' Internal using for make aiomysql pool '''
         return aiomysql.create_pool(**self._opt)
     
-    def Connect(self):
-        """ internal using """
+    def connect(self):
+        ''' Internal using '''
         return aiomysql.connect(**self._opt)
 
-    async def __Execute(self, sql, *args):
-        """ internal using """
-        async with self.Connect() as con:
+    async def __execute(self, sql, *args):
+        ''' Internal using '''
+        async with self.connect() as con:
             async with con.cursor() as cur:
                 await cur.execute(sql, *args)
                 await con.commit()
                 return cur
 
-    async def __ExecuteMany(self, sql, vargs):
-        """ internal using """
-        async with self.Connect() as con:
+    async def __execute_many(self, sql, vargs):
+        ''' Internal using '''
+        async with self.connect() as con:
             async with con.cursor() as cur:
                 await cur.executemany(sql, vargs)
                 await con.commit()
                 return cur
 
     async def execute(self, sql, *args):
-        """ coroutine of execute a SQL with args like pymysql, return fetched results """
-        cur = await self.__Execute(sql, *args)
+        ''' Coroutine of execute a SQL with args like pymysql, return fetched results '''
+        cur = await self.__execute(sql, *args)
         return await cur.fetchall()
 
-    async def ExecuteWithCallback(self, callback, sql, *args):
-        """ coroutine of execute a SQL with args like pymysql, return cur_callback(results) """
-        cur = await self.__Execute(sql, *args)
+    async def execute_callback(self, callback, sql, *args):
+        ''' Coroutine of execute a SQL with args like pymysql, return cur_callback(results) '''
+        cur = await self.__execute(sql, *args)
         return callback(await cur.fetchall())
 
-    async def ExecuteMany(self, sql, argslist):
-        """ coroutine of execute a SQL with args like pymysql, return fetched results """
-        cur = await self.__ExecuteMany(sql, argslist)
+    async def execute_many(self, sql, argslist):
+        ''' Coroutine of execute a SQL with args like pymysql, return fetched results '''
+        cur = await self.__execute_many(sql, argslist)
         return await cur.fetchall()
  
-    async def ExecuteManyWithCallback(self, callback, sql, argslist):
-        """ coroutine of execute a SQL with args like pymysql, return cur_callback(results) """
-        cur = await self.__ExecuteMany(sql, argslist)
+    async def execute_many_callback(self, callback, sql, argslist):
+        ''' coroutine of execute a SQL with args like pymysql, return cur_callback(results) '''
+        cur = await self.__execute_many(sql, argslist)
         return callback(await cur.fetchall())
 
     @staticmethod
-    def DefaultConnectArgs():
-        """ get default connection arguments """
+    def default_address():
+        ''' Get default connection arguments '''
         return {
                 "host" : '127.0.0.1', 
                 "port" : 3306, 
@@ -127,7 +134,7 @@ class AioMysql(AioDBClient):
 
 
 class AioRedis(AioDBClient):
-    """ A wrapper of aiomysql for simple and easy using """
+    ''' A wrapper of aiomysql for simple and easy using '''
     def __init__(self, host='localhost', port=6379):
         self._host = host
         self._port = port
@@ -135,24 +142,24 @@ class AioRedis(AioDBClient):
         self._poolsize = (4, 16)
         
     def SetPoolSize(self, minsize, maxsize):
-        """ set min and max size of pool """
+        ''' Set min and max size of pool '''
         if minsize <= 0:
             minsize = 1
         if maxsize <= 0:
             maxsize = 1
         self._poolsize = (minsize, maxsize)
     
-    def Pool(self):
-        """ internal using """
+    def pool(self):
+        ''' Internal using '''
         return aioredis.create_pool((self._host, self._port), minsize=self._poolsize[0], maxsize=self._poolsize[1])
     
     def connect(self):
-        """ internal using """
+        ''' Internal using '''
         return aioredis.create_connection((self._host, self._port), encoding='utf-8')
     
     async def execute(self, cmd:str):
-        """ execute one command """
-        con = await self.Connect()
+        ''' Execute one command '''
+        con = await self.connect()
         try:
             if ' ' in cmd:
                 method, args = cmd.split(' ', 1)
@@ -162,9 +169,9 @@ class AioRedis(AioDBClient):
         finally:
             con.close()
     
-    async def ExecuteMany(self, cmds:list):
-        """ execute more commands in the list """
-        pool = await self.Pool()
+    async def execute_many(self, cmds:list):
+        ''' Execute more commands in the list '''
+        pool = await self.pool()
         try:
             ret = []
             async with pool.get() as con:
@@ -175,114 +182,120 @@ class AioRedis(AioDBClient):
         finally:
             await pool.clear()
     
-    async def DBSize(self):
-        """ DBSIZE command is a special command, so makes it a method """
-        con = await self.Connect()
+    async def dbsize(self):
+        ''' DBSIZE command is a special command, so makes it a method '''
+        con = await self.connect()
         try:
             return await con.execute('DBSIZE')
         finally:
             con.close()
     
-    @staticmethod 
-    def DefaultConnectArgs():
+    @staticmethod
+    def default_address():
         return ('localhost', 6379)
 
 
-def InputPassword():
-    """ help tester to get the password from console input """
+def input_password():
+    ''' Help tester to get the password from console input '''
     return str(getpass.getpass('Enter mysql password:'))
 
 
-def TestAioMysql():
-    """ simple test for this AioMysql """
+def test_aio_mysql():
+    ''' Simple test for this AioMysql '''
     show = lambda r: debug(list(r))
-    options = AioMysql.DefaultConnectArgs()
-    options['password'] = InputPassword()
+    options = AioMysql.default_address()
+    options['password'] = input_password()
     
     db = AioMysql(**options)
     
     # for looking clearly
-    Addtask = db.Addtask
-    Addtasks = db.Addtasks
+    add_task = db.add_task
+    add_tasks = db.add_tasks
     execute = db.execute
-    ExecuteMany = db.ExecuteMany
-    ExecuteWithCallback = db.ExecuteWithCallback
-    ExecuteManyWithCallback = db.ExecuteManyWithCallback
+    execute_many = db.execute_many
+    execute_callback = db.execute_callback
+    execute_many_callback = db.execute_many_callback
 
     debug('Test create table')
 
     SQL_DROP = "DROP TABLE IF EXISTS `test_aiodb`"
-    SQL_CREATE = """
+    SQL_CREATE = '''
     CREATE TABLE `test_aiodb` (
         `id` INT NOT NULL AUTO_INCREMENT,
         `name` VARCHAR(30) NOT NULL,
         PRIMARY KEY (id)); 
     SHOW TABLES;
-    """
+    '''
 
-    Addtask(execute(SQL_DROP)).RunAllTasks()
-    Addtask(execute(SQL_CREATE)).RunAllTasks()
-    Addtask(execute("SHOW TABLES"), lambda r : debug(list(sorted(r))[0])).RunAllTasks()
+    add_task(execute(SQL_DROP)).run()
+    add_task(execute(SQL_CREATE)).run()
+    add_task(execute("SHOW TABLES"), lambda r : debug(list(sorted(r))[0])).run()
 
     debug('Test execute many, insert 10000 rows!!!')
     names_to_insert = ['Python', 'Cpp', 'Java', 'Ruby', 'Scala', 'Delphi'] * 10000
 
-    Addtask(
-        ExecuteMany('INSERT INTO `test_aiodb` (`name`) VALUES (%s)', names_to_insert),
-    ).RunAllTasks()
+    add_task(
+        execute_many('INSERT INTO `test_aiodb` (`name`) VALUES (%s)', names_to_insert),
+    ).run()
 
-    Addtask(
-        ExecuteWithCallback(show, 'SELECT COUNT(*) FROM `test_aiodb`'),
-    ).RunAllTasks()
+    add_task(
+        execute_callback(show, 'SELECT COUNT(*) FROM `test_aiodb`'),
+    ).run()
 
     debug('Test singel execute')
-    Addtask(
-        ExecuteWithCallback(lambda _:debug(_[-1]), 'SELECT * FROM `test_aiodb`')
-    ).RunAllTasks()
+    add_task(
+        execute_callback(lambda _:debug(_[-1]), 'SELECT * FROM `test_aiodb`')
+    ).run()
     
     debug('Test multi execute')
-    Addtasks(
+    add_tasks(
         execute('SELECT * FROM `test_aiodb` WHERE `id`=1'),
         execute('SELECT * FROM `test_aiodb` WHERE `id`=2'),
         execute('SELECT * FROM `test_aiodb` WHERE `id`=3'),
         execute('SELECT * FROM `test_aiodb` WHERE `id`=4'),
         execute('SELECT * FROM `test_aiodb` WHERE `id`=5'),
         done_callback = show
-    ).RunAllTasks()
+    ).run()
 
     debug('Test double callback')
-    Addtasks(
-        ExecuteWithCallback(lambda r : r[:1], 'SELECT 1 FROM `test_aiodb`'),
-        ExecuteWithCallback(lambda r : r[:2], 'SELECT 2 FROM `test_aiodb`'),
-        ExecuteWithCallback(lambda r : r[:3], 'SELECT 3 FROM `test_aiodb`'),
+    add_tasks(
+        execute_callback(lambda r : r[:1], 'SELECT 1 FROM `test_aiodb`'),
+        execute_callback(lambda r : r[:2], 'SELECT 2 FROM `test_aiodb`'),
+        execute_callback(lambda r : r[:3], 'SELECT 3 FROM `test_aiodb`'),
         done_callback = show
-    ).RunAllTasks()
+    ).run()
 
 
-def TestAioRedis():
-    """ simple test for this AioRedis """
+def test_aio_redis():
+    ''' Simple test for this AioRedis '''
     n = 0
+    
     def cb(x):
         nonlocal n
         n += len(x)
+    
     ar = AioRedis()
-    ar.Addtask(ar.DBSize(), lambda n: debug('DBSIZE:', n)).RunAllTasks()
-    ar.Addtask(ar.ExecuteMany(['SET my-key-for-test my-val', 'SET QQ-for-test 123'] * 500), cb).RunAllTasks()
-    ar.Addtask(ar.ExecuteMany(['GET my-key-for-test', 'GET QQ-for-test'] * 500), cb).RunAllTasks()
-    ar.Addtask(ar.DBSize(), lambda n: debug('DBSIZE:', n)).RunAllTasks()
-    ar.Addtasks(
+    
+    ar.add_task(ar.dbsize(), lambda n: debug('DBSIZE:', n)).run()
+    ar.add_task(ar.execute_many(['SET my-key-for-test my-val', 'SET QQ-for-test 123'] * 500), cb).run()
+    ar.add_task(ar.execute_many(['GET my-key-for-test', 'GET QQ-for-test'] * 500), cb).run()
+    ar.add_task(ar.dbsize(), lambda n: debug('DBSIZE:', n)).run()
+    
+    ar.add_tasks(
         ar.execute('DEL my-key-for-test'), 
         ar.execute('DEL QQ'),
-    ).RunAllTasks()
-    ar.Addtask(ar.DBSize(), lambda n: debug('DBSIZE:', n)).RunAllTasks()
+    ).run()
+    
+    ar.add_task(ar.dbsize(), lambda n: debug('DBSIZE:', n)).run()
+    
     debug(n)
 
 
 if __name__ == '__main__':
     debug('Test AioMysql')
-    TestAioMysql()
+    test_aio_mysql()
     debug('Test AioRedis')
-    TestAioRedis()
+    test_aio_redis()
     debug('Test OK')
 
 

@@ -1,6 +1,10 @@
 # -*- coding:utf-8 -*-
 # author : cypro666
 # note   : python3.4+
+'''
+Async queue for asyncio 
+'''
+
 import asyncio
 import threading
 from asyncio import QueueEmpty as AsyncQueueEmpty
@@ -10,7 +14,9 @@ from heapq import heappop, heappush
 from queue import Empty as SyncQueueEmpty
 from queue import Full as SyncQueueFull
 
+
 class Queue:
+    ''' Proxy of async queues '''
     def __init__(self, maxsize=0, *, loop=None):
         if loop is None:
             loop = asyncio.get_event_loop()
@@ -156,9 +162,8 @@ class Queue:
 
 
 class _SyncQueueProxy:
-    '''Create a queue object with a given maximum size.
-
-    If maxsize is <= 0, the queue size is infinite.
+    ''' Create a queue object with a given maximum size.
+        If maxsize is <= 0, the queue size is infinite.
     '''
 
     def __init__(self, parent):
@@ -192,6 +197,7 @@ class _SyncQueueProxy:
                 self._parent._loop.call_soon_threadsafe(
                     self._parent._finished.set)
             self._parent._unfinished_tasks = unfinished
+
 
     def join(self):
         '''Blocks until all items in the Queue have been gotten and processed.
@@ -329,24 +335,24 @@ class _AsyncQueueProxy:
         self._parent = parent
 
     def qsize(self):
-        """Number of items in the queue."""
+        '''Number of items in the queue.'''
         return self._parent._qsize()
 
     @property
     def maxsize(self):
-        """Number of items allowed in the queue."""
+        '''Number of items allowed in the queue.'''
         return self._parent._maxsize
 
     def empty(self):
-        """Return True if the queue is empty, False otherwise."""
+        '''Return True if the queue is empty, False otherwise.'''
         return self.qsize() == 0
 
     def full(self):
-        """Return True if there are maxsize items in the queue.
+        '''Return True if there are maxsize items in the queue.
 
         Note: if the Queue was initialized with maxsize=0 (the default),
         then full() is never True.
-        """
+        '''
         if self._parent._maxsize <= 0:
             return False
         else:
@@ -354,13 +360,13 @@ class _AsyncQueueProxy:
 
     @asyncio.coroutine
     def put(self, item):
-        """Put an item into the queue.
+        '''Put an item into the queue.
 
         Put an item into the queue. If the queue is full, wait until a free
         slot is available before adding item.
 
         This method is a coroutine.
-        """
+        '''
         self._parent._check_closing()
         with (yield from self._parent._async_not_full):
             self._parent._sync_mutex.acquire()
@@ -387,10 +393,10 @@ class _AsyncQueueProxy:
                     self._parent._sync_mutex.release()
 
     def put_nowait(self, item):
-        """Put an item into the queue without blocking.
+        '''Put an item into the queue without blocking.
 
         If no free slot is immediately available, raise QueueFull.
-        """
+        '''
         self._parent._check_closing()
         with self._parent._sync_mutex:
             if self._parent._maxsize > 0:
@@ -403,12 +409,12 @@ class _AsyncQueueProxy:
 
     @asyncio.coroutine
     def get(self):
-        """Remove and return an item from the queue.
+        '''Remove and return an item from the queue.
 
         If queue is empty, wait until an item is available.
 
         This method is a coroutine.
-        """
+        '''
         self._parent._check_closing()
         with (yield from self._parent._async_not_empty):
             self._parent._sync_mutex.acquire()
@@ -434,10 +440,10 @@ class _AsyncQueueProxy:
                     self._parent._sync_mutex.release()
 
     def get_nowait(self):
-        """Remove and return an item from the queue.
+        '''Remove and return an item from the queue.
 
         Return an item if one is immediately available, else raise QueueEmpty.
-        """
+        '''
         self._parent._check_closing()
         with self._parent._sync_mutex:
             if self._parent._qsize() == 0:
@@ -449,7 +455,7 @@ class _AsyncQueueProxy:
             return item
 
     def task_done(self):
-        """Indicate that a formerly enqueued task is complete.
+        '''Indicate that a formerly enqueued task is complete.
 
         Used by queue consumers. For each get() used to fetch a task,
         a subsequent call to task_done() tells the queue that the processing
@@ -461,7 +467,7 @@ class _AsyncQueueProxy:
 
         Raises ValueError if called more times than there were items placed in
         the queue.
-        """
+        '''
         self._parent._check_closing()
         with self._parent._all_tasks_done:
             if self._parent._unfinished_tasks <= 0:
@@ -473,13 +479,13 @@ class _AsyncQueueProxy:
 
     @asyncio.coroutine
     def join(self):
-        """Block until all items in the queue have been gotten and processed.
+        '''Block until all items in the queue have been gotten and processed.
 
         The count of unfinished tasks goes up whenever an item is added to the
         queue. The count goes down whenever a consumer calls task_done() to
         indicate that the item was retrieved and all work on it is complete.
         When the count of unfinished tasks drops to zero, join() unblocks.
-        """
+        '''
         while True:
             with self._parent._sync_mutex:
                 if self._parent._unfinished_tasks == 0:
