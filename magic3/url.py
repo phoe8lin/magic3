@@ -11,6 +11,67 @@ except ImportError:
     raise ImportError('magic3.crawler depends on tornado and requests library')
 
 
+DEFAULT_HTTP_HEADER = {
+    'User-Agent'      : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0',
+    'Accept'          : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0',
+    'Accept-Language' : 'zh-cn,zh;q=0.8,en-us;q=0.5,en;q=0.3',
+    'Accept-Encoding' : 'gzip, deflate',
+    'Connection'      : 'keep-alive'
+}
+
+
+class CharsetCache(object):
+    ''' A simple cache for decoding http content(html) from charset in <meta> tag '''
+
+    def __init__(self, schema='host'):
+        ''' Schema can be 'host' or 'path' '''
+        if schema.lower() == 'host':
+            self._delim = '/'
+        elif schema.lower() == 'path':
+            self._delim = '?'
+
+        self._cache = dict()
+        self._charset = re.compile(b"<meta.+?charset(?:\\W+)(?P<code>[-_0-9a-zA-Z]+).*?>", re.IGNORECASE)
+
+    def key(self, url) -> str:
+        if url.startswith('http://') or url.startswith('https://'):
+            return url.split(self._delim, 2)[-1]
+        else:
+            return url.split(self._delim, 1)[0]
+
+    def value(self, url) -> str:
+        return self._cache[self.key(url)]
+
+    def decode(self, url, html, errors='replace') -> bytes:
+        ''' Decode bytes in html specified in <meta> tag '''
+        try:
+            return html.decode(self.value(url), errors=errors)
+        except KeyError:
+            code = self._charset.search(html).group('code').decode('utf-8')
+            code = code.lower()
+            self._cache[self.key(url)] = code
+            return html.decode(code, errors=errors)
+
+    def clear(self):
+        self._cache.clear()
+
+
+class Response(object):
+    ''' As the result type of all fetchers below '''
+    __slots__ = ('url', 'header', 'content')
+
+    def __init__(self, url, header, content, decoder=None):
+        self.url = url
+        self.header = header
+        self.content = decoder(content) if decoder else content
+
+    def __len__(self):
+        return len(self.header) + len(self.content)
+
+    def size(self):
+        return (len(self.header), len(self.content))
+
+
 class URLMacher:
     ''' URL/URI regex and compiled '''
 
