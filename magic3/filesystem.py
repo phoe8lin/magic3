@@ -7,6 +7,35 @@ from pathlib import Path
 from platform import platform
 from magic3.utils import debug
 
+def default_release_dirs(*extra):
+    ''' get default dirs that release executables in '''
+    home = str(Path.home()) + os.sep
+    possible = ['github', 'bitbucket', 'oschina', 'develop', 'projects']
+    for s in set(extra):
+        if s not in possible:
+            possible.append(s)
+    return [home + s for s in possible]
+
+def search_program(name, where):
+    ''' find executable program in possiable dir '''
+    if isinstance(where, (list, tuple, set)):
+        for d in where:
+            if not d.endswith(os.sep):
+                d += os.sep
+            if os.path.isfile(d + name):
+                return d + name
+    elif isinstance(where, str):
+        if not where.endswith(os.sep):
+            where += os.sep
+        if os.path.isfile(where + name):
+            return where + name
+    for d in default_release_dirs():
+        if not d.endswith(os.sep):
+            d += os.sep
+        if os.path.isfile(d + name):
+            return d + name
+    return None
+
 def add_sys_path(name:str) -> bool:
     ''' Add name into sys.path '''
     if name in sys.path:
@@ -217,6 +246,9 @@ def test(path):
     print(grand_dir(__file__))
     assert grand_dir(__file__) == gd + os.sep
     print('\ntest OK')
+
+    print(default_release_dirs('github'))
+    print(search_program('magic3/magic3', None))
 
 
 if __name__ == '__main__':
