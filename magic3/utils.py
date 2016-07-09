@@ -108,18 +108,22 @@ def recursive_decode(s:str, level:int=10) -> str:
 
 def loadjson(name, objHook=None) -> dict:
     ''' Load json from file return dict '''
-    with _io.open(name, encoding='utf-8', errors='replace') as f:
-        return json.loads(f.read(), encoding='utf-8', object_hook=objHook)
+    try:
+        with _io.open(name, encoding='utf-8', errors='replace') as f:
+            return json.loads(f.read(), encoding='utf-8', object_hook=objHook)
+    except Exception as e:
+        if 'BOM' in str(e).upper():
+            with _io.open(name, encoding='utf-8-sig', errors='replace') as f:
+                return json.loads(f.read(), encoding='utf-8-sig', object_hook=objHook)
 
 def dumpjson(obj:dict, name=None) -> str:
     ''' Dump json(dict) to file '''
     str = json.dumps(obj, indent=4, ensure_ascii=False)
-
     if name:
         with _io.open(name, 'w') as f:
             f.write(str)
-
     return str
+
 
 def debug(*args, **kwargs):
     ''' Print to stderr not stdout '''
