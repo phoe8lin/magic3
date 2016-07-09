@@ -112,7 +112,7 @@ def loadjson(name, objHook=None) -> dict:
         with _io.open(name, encoding='utf-8', errors='replace') as f:
             return json.loads(f.read(), encoding='utf-8', object_hook=objHook)
     except Exception as e:
-        if 'BOM' in str(e).upper():
+        if 'BOM' in str(e):
             with _io.open(name, encoding='utf-8-sig', errors='replace') as f:
                 return json.loads(f.read(), encoding='utf-8-sig', object_hook=objHook)
 
