@@ -11,7 +11,7 @@ from string import Template as PyTemplate
 try:
     from jinja2 import Template as JJTemplate
     from mako.template import Template as MakoTemplate
-    
+
     templateFactory = {
         'python' : PyTemplate,
         'Python' : PyTemplate,
@@ -21,9 +21,9 @@ try:
         'mako'   : MakoTemplate,
         'Mako'   : MakoTemplate
     }
-    
+
 except ImportError:
-    
+
     templateFactory = {
         'python' : PyTemplate,
         'Python' : PyTemplate,
@@ -51,7 +51,7 @@ identifierCharset = frozenset('ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 # Used for find all english words
 reOnlyEnglish = re.compile("[A-Za-z]+")
 
-# Used for split sentence and pick chinese parts 
+# Used for split sentence and pick chinese parts
 reNoneChinese = re.compile("[\u0000-\u4DFF]|[\u9FA5-\uFFFF]")
 
 # Used for split sentence and pick chinese parts and english words
@@ -68,7 +68,7 @@ reIPv4 = re.compile("^\
 reURL = re.compile("((http|ftp|https):"
                    "//[\w\-_]+(\.[\w\-_]+)+([\w\-\.,@?^=%&amp;:/~\+#]*[\w\-\@?^=%&amp;/~\+#])?)")
 
-# Regex for match standard date 
+# Regex for match standard date
 reDate = re.compile("(\\d{2}|\\d{4})[ -/]([0-2][1-9])[ -/]([0-3][0-9])", re.IGNORECASE)
 
 # Regex for match standard time
@@ -80,7 +80,7 @@ rePhone = re.compile("("
                      "(?:(?<![\d-])(?:(?:\(\+?\d{2}\))|(?:\+?\d{2}))\s*\d{2}\s*\d{3}\s*\d{4}(?![\d-]))"
                      ")")
 
-# Regex for match standard email 
+# Regex for match standard email
 reEmail = re.compile("([a-z0-9!#$%&'*+\/=?^_`{|.}~-]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)", re.IGNORECASE)
 
 # Regex for match standard ipv6 address
@@ -90,7 +90,7 @@ reIPv6 = re.compile("\s*(?!.*::.*::)(?:(?!:)|:(?=:))"
                         "?:[0-9a-f]{0,4}(?:(?<=::)|(?<!::):)[0-9a-f]{0,4}"
                         "(?:(?<=::)|(?<!:)|(?<=:)(?<!::):)|(?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)"
                         "(?:\.(?:25[0-4]|2[0-4]\d|1\d\d|[1-9]?\d)){3}"
-                    ")\s*", re.VERBOSE|re.IGNORECASE|re.DOTALL)
+                    ")\s*", re.VERBOSE | re.IGNORECASE | re.DOTALL)
 
 # Not very useful...
 rePrice = re.compile("[$]\s?[+-]?[0-9]{1,3}(?:(?:,?[0-9]{3}))*(?:\.[0-9]{1,2})?")
@@ -123,7 +123,7 @@ def test():
     assert reTime.match('05:55 PM')
     assert rePhone.match('13945678900')
     assert reEmail.match('cypro666@gmail.com')
-    
+
 if __name__ == '__main__':
     test()
 

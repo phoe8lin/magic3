@@ -46,7 +46,7 @@ def is_valid_ip(ip) -> bool:
 
 class IPv4Macher:
     ''' Use IPv4Macher.compiled to match strings is IP address or not '''
-    
+
     pattern = "^\
 ([0-9]|[1-9][0-9]|1\d\d|2[0-4]\d|25[0-5])\.\
 ([0-9]|[1-9][0-9]|1\d\d|2[0-4]\d|25[0-5])\.\
