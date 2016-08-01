@@ -122,24 +122,24 @@ def run_io_flusher() -> bool:
 def test():
     import time, os, pprint
     assert run_io_flusher()
-    
+
     r = OSCommand.call('date -u', True)
     assert r[0] == 0 and r[1]
-    
+
     print("return code:", r[0], os.strerror(r[0]), '\n')
     p = OSCommand.popen('locale -v', True)
-    
+
     print(p.stdout.read().decode('utf-8'))
     print()
-    
+
     print('count "python3"')
     print(OSCommand.process_count('python3'))
     print()
-    
+
     print('count "python3" but not "pydev"')
     print(OSCommand.process_count_extra('python3', 'pydev'))
     print()
-    
+
     print(OSCommand.getpid('python3'))
     print()
 
@@ -152,12 +152,12 @@ def test():
         sys.stderr.write('Bingo! %s %s %s\n' % (exctype, value, traceback))
 
     set_unexception_hook(user_hook)
-    
+
     try:
         raise ValueError('Uncatched Error(for test)')
     except:
         pass
-    
+
     pprint.pprint(reconfig())
 
     assert (get_cpu_count() >= 1)
