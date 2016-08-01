@@ -94,7 +94,7 @@ def make_aio_thread(new=False, daemon=True, name=None):
 
 def test():
     d = {}
-    
+
     def userfunc(arg, **kwargs):
         d[arg] = kwargs['a']
 

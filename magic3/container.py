@@ -219,14 +219,14 @@ def default_dict_to_dict(dd):
                             dd[i][j][k] = dict(dk)
                             for m in dk:
                                 if isinstance(dk[m], defaultdict):
-                                    raise TypeError('depth of nested defaultdict is ')
+                                    raise TypeError('max depth of nested defaultdict is 4')
     return dict(dd)
 
 
 def most_common(d:dict, topn=10) -> list:
     ''' List the n most common elements and their counts from the most
         common to the least.  If n is None, then list all element counts '''
-    
+
     if topn is None or topn == 0:
         return sorted(d.items(), key=itemgetter(1), reverse=True)
 

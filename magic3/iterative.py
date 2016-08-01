@@ -182,95 +182,95 @@ class TestIteralgos(unittest.TestCase):
         self.q = [0, 2, 4, 6, 8]
         self.a = [1, 2, 3, 4, 5]
         self.s = ['aa', 'bb', 'cc', 'dd', 'ee']
-    
+
     def tearDown(self):
         pass
-    
+
     def test_padnone(self):
         r = ipadnone([1, 2, 3])
         self.assertEqual(next(r), 1)
         self.assertEqual(next(r), 2)
         self.assertEqual(next(r), 3)
         self.assertEqual(next(r), None)
-    
+
     def test_tail(self):
         self.assertEqual(list(itail(4, 'ABCDEFGHIJK')), ['H', 'I', 'J', 'K'])
-        
+
     def test_powerset(self):
         self.assertEqual(list(ipowerset([1, 2, 3])), [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)])
-    
+
     def test_dotproduct(self):
         self.assertEqual(idot_product(self.p, self.q), 140)
-    
+
     def test_advance(self):
         i = iter(self.a)
         iadvance(i, 3)
         self.assertEqual(next(i), 4)
-    
+
     def test_partition(self):
         i0, i1 = ipartition(lambda x: x & 1, range(10))
         self.assertEqual(list(i0), [0, 2, 4, 6, 8])
         self.assertEqual(list(i1), [1, 3, 5, 7, 9])
-    
+
     def test_ntake(self):
         self.assertEqual(['aa', 'bb'], list(itakeN(self.s, 0, 2)))
-    
+
     def test_untilfail(self):
         def _fun(x):
             return x * 2
         self.assertEqual(iuntil_fail(_fun, StopIteration, self.q), 5)
-    
+
     def test_nth(self):
         self.assertEqual(inth(self.s, 3, None), 'dd')
         self.assertEqual(inth(self.s, 8, None), None)
-    
+
     def test_quantify(self):
         self.assertEqual(iquantify(self.q, lambda x : x > 5), 2)
         self.assertEqual(iquantify(self.s, lambda s : s == 'ee'), 1)
-    
+
     def test_chain(self):
         a = (3, 2, 1)
         self.assertEqual(list(ichain(a, 2)), [3, 2, 1, 3, 2, 1])
-    
+
     def test_flatten(self):
         ll = [{1, 2}, [3, 4], (5, 6)]
         self.assertEqual(list(iflatten(ll)), [1, 2, 3, 4, 5, 6])
-    
+
     def test_repeatcall(self):
         n = 0
         for i in irepeat_call(random.random, 3):
             n += 1
             self.assertTrue(i >= 0 and i <= 1.0)
         self.assertEqual(n, 3)
-    
+
     def test_pairwise(self):
         self.assertEqual(list(ipairwise(range(6))), [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)])
-    
+
     def test_grouper(self):
         self.assertEqual(list(igrouped(self.p, 2, None)), [(1, 3), (5, 7), (9, None)])
-    
+
     def test_roundrobin(self):
         a = ['aa', 0, 1, 'bb', 2, 3, 'cc', 4, 5, 'dd', 6, 7, 'ee', 8, 9]
         self.assertEqual(list(iroundrobin(self.s, self.q, self.p)), a)
-    
+
     def test_everseen(self):
         self.assertEqual(list(ieverseen("AAABCCDDDDEFABC")), ['A', 'B', 'C', 'D', 'E', 'F'])
-    
+
     def test_justseen(self):
         self.assertEqual(list(ijustseen("AAABBCCDDDDEFABC")),
                          ['A', 'B', 'C', 'D', 'E', 'F', 'A', 'B', 'C'])
-    
+
     def test_firsttrue(self):
         self.assertEqual(ifirst_true([{}, 0, None, False, 'bingo', 1, 2, 3, 0], False), 'bingo')
-    
+
     def test_randomselect(self):
         self.assertEqual(len(irandom_select(self.a, 3)), 3)
-    
+
     def test_randomproduct(self):
         m, n = irandom_product(self.p, self.q)
         self.assertIn(m, self.p)
         self.assertIn(n, self.q)
-        
+
     def test_randompermutation(self):
         r = irandom_permutation(self.p)
         for i in r:
