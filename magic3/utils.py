@@ -181,6 +181,11 @@ def print_error(name, output=sys.stderr):
     sys.stderr.write('%s : %s from :%s\n' % (exc_type, exc_val, name))
     traceback.print_tb(exc_tb, limit=2, file=output)
 
+def fmterr(depth=2):
+    ''' Print exception with extra info(name) and limit traceback in 2 '''
+    _, _, exc_tb = sys.exc_info()
+    return ''.join(traceback.format_tb(exc_tb, limit=depth)).replace('\n', '').strip()
+
 
 class Timer(object):
     ''' A simple timer for debug using '''
