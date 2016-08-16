@@ -34,7 +34,7 @@ class Logger(object):
         Note this logger is not fast, do Not use it if performance is important!
     '''
 
-    def __init__(self, logfile, append=True, locktype=DummyLock):
+    def __init__(self, logfile, append=True, locktype=DummyLock, level=logging.DEBUG):
         ''' Make sure logfile's path is existed and valid '''
         self.__logfile = logfile
         self.__nlevel = {'DEBUG':0, 'INFO':0, 'WARN':0, 'ERROR':0, 'FATAL':0}
@@ -42,7 +42,7 @@ class Logger(object):
         self.__lock = locktype()
 
         self.mode = 'a' if append else 'w'
-        self.level = logging.NOTSET
+        self.level = level
         self.dtfmt = '%Y-%m-%d %H:%M:%S'
         self.msgfmt = '%(asctime)s.%(msecs)03d [%(levelname)s] %(message)s'
 
