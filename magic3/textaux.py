@@ -7,11 +7,11 @@ A group of constants for text tasks, contain regex and template
 '''
 import re
 from string import Template as PyTemplate
+from functools import lru_cache
 
 try:
-    from jinja2 import Template as JJTemplate
-    from mako.template import Template as MakoTemplate
-
+    # from jinja2 import Template as JJTemplate
+    # from mako.template import Template as MakoTemplate
     templateFactory = {
         'python' : PyTemplate,
         'Python' : PyTemplate,
@@ -21,9 +21,7 @@ try:
         'mako'   : MakoTemplate,
         'Mako'   : MakoTemplate
     }
-
-except ImportError:
-
+except (ImportError, NameError):
     templateFactory = {
         'python' : PyTemplate,
         'Python' : PyTemplate,
@@ -178,6 +176,14 @@ def chinese_to_arabic(cn:str) -> int:
     return ret
 
 
+@lru_cache(maxsize=1000)
+def compilex(sre, multi=False):
+    if multi:
+        return re.compile(sre, re.S|re.M)
+    else:
+        return re.compile(sre)
+
+
 # TODO: make a full unittest
 def test():
     assert reOnlyEnglish.findall("cypro666@gmail.com") == ['cypro', 'gmail', 'com']
@@ -200,6 +206,7 @@ def test():
     for cn in test_dig: 
         x = chinese_to_arabic(cn)
     assert x == 10250011038
+
 
 if __name__ == '__main__':
     test()
