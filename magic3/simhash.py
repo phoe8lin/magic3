@@ -204,7 +204,7 @@ if __name__ == "__main__":
     assert(sh1.distance(sh2) == 0)
     assert(sh4.distance(sh6) < 3)
     assert(sh5.distance(sh6) < 3)
-    assert(sha3.f == 64)
+    assert(sh3.f == 64)
 
 
 
